@@ -1,0 +1,48 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+terraform.rc
+
+# Helm
+charts/*/charts/
+*.tgz
+
+# Kubernetes
+*.kubeconfig
+kubeconfig.yaml
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+credentials/
+
+# Env
+.env
+.env.local
+
+# Logs
+*.log
+
+# Temp
+tmp/
+temp/
