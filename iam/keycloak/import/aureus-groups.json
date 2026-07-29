@@ -1,0 +1,85 @@
+[
+  {
+    "id": "diretores",
+    "name": "Diretores",
+    "path": "/diretores",
+    "subGroups": [],
+    "realmRoles": [
+      "admin"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "nivel_hierarquico": ["1"],
+      "departamento": ["Diretoria"]
+    }
+  },
+  {
+    "id": "gerencia",
+    "name": "Gerência",
+    "path": "/gerencia",
+    "subGroups": [],
+    "realmRoles": [
+      "gerente"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "nivel_hierarquico": ["2"],
+      "departamento": ["Operações", "Financeiro", "Tecnologia"]
+    }
+  },
+  {
+    "id": "operadores",
+    "name": "Operadores",
+    "path": "/operadores",
+    "subGroups": [],
+    "realmRoles": [
+      "operador"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "nivel_hierarquico": ["3"],
+      "departamento": ["Operações", "Atendimento"]
+    }
+  },
+  {
+    "id": "clientes",
+    "name": "Clientes",
+    "path": "/clientes",
+    "subGroups": [],
+    "realmRoles": [
+      "cliente"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "tipo_cliente": ["PESSOA_FISICA", "PESSOA_JURIDICA"]
+    }
+  },
+  {
+    "id": "auditores",
+    "name": "Auditores",
+    "path": "/auditores",
+    "subGroups": [],
+    "realmRoles": [
+      "auditor"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "nivel_hierarquico": ["2"],
+      "departamento": ["Auditoria"]
+    }
+  },
+  {
+    "id": "compliance",
+    "name": "Compliance",
+    "path": "/compliance",
+    "subGroups": [],
+    "realmRoles": [
+      "compliance"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "nivel_hierarquico": ["2"],
+      "departamento": ["Compliance"]
+    }
+  }
+]

@@ -1,0 +1,65 @@
+global:
+  cloud: aws
+  clusterName: aurix-eks
+  dnsSuffix: aws.aurixplatform.com
+
+aurix-core:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/aurix-core-sa-role
+  nodeSelector:
+    node-type: general
+    topology.kubernetes.io/zone: us-east-1a
+
+aurix-gateway:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERT_ID
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+  ingress:
+    enabled: true
+    className: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+
+aurix-analytics:
+  nodeSelector:
+    node-type: compute-optimized
+
+aurix-ai:
+  nodeSelector:
+    node-type: gpu
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+
+aurix-billing:
+  nodeSelector:
+    node-type: general
+
+aurix-baas:
+  nodeSelector:
+    node-type: general
+
+aurix-internet-banking:
+  nodeSelector:
+    node-type: general
+
+aurix-mobile-banking:
+  nodeSelector:
+    node-type: general
+
+aurix-onboarding:
+  nodeSelector:
+    node-type: general
+
+aurix-security:
+  nodeSelector:
+    node-type: general

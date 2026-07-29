@@ -1,0 +1,213 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aurix-core
+  namespace: aurix-platform
+  labels:
+    app: aurix-core
+    version: v1.0.0
+    component: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aurix-core
+  template:
+    metadata:
+      labels:
+        app: aurix-core
+        version: v1.0.0
+    spec:
+      containers:
+      - name: aurix-core
+        image: aurix-platform/aurix-core:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: management
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: aurix-db-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: aurix-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aurix-db-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "aurix-redis"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: "aurix-kafka:9092"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/live
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/ready
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: aurix-core-config
+      - name: logs-volume
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - aurix-core
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aurix-core
+  namespace: aurix-platform
+  labels:
+    app: aurix-core
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: management
+  selector:
+    app: aurix-core
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aurix-core-config
+  namespace: aurix-platform
+data:
+  application.yml: |
+    server:
+      port: 8080
+      servlet:
+        context-path: /api/core
+    
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus
+      endpoint:
+        health:
+          show-details: always
+      metrics:
+        export:
+          prometheus:
+            enabled: true
+    
+    spring:
+      application:
+        name: aurix-core
+      profiles:
+        active: production
+      datasource:
+        hikari:
+          maximum-pool-size: 20
+          minimum-idle: 5
+          connection-timeout: 30000
+          idle-timeout: 600000
+          max-lifetime: 1800000
+      jpa:
+        hibernate:
+          ddl-auto: validate
+        show-sql: false
+        properties:
+          hibernate:
+            format_sql: true
+            use_sql_comments: true
+      redis:
+        timeout: 2000ms
+        lettuce:
+          pool:
+            max-active: 8
+            max-idle: 8
+            min-idle: 0
+      kafka:
+        consumer:
+          group-id: aurix-core-group
+          auto-offset-reset: earliest
+          enable-auto-commit: false
+        producer:
+          acks: all
+          retries: 3
+          batch-size: 16384
+          linger-ms: 5
+          buffer-memory: 33554432
+    
+    logging:
+      level:
+        com.aurix.platform: INFO
+        org.springframework.security: DEBUG
+        org.springframework.web: INFO
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      file:
+        name: /app/logs/aurix-core.log
+        max-size: 100MB
+        max-history: 30

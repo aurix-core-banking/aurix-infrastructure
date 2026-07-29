@@ -1,0 +1,60 @@
+global:
+  cloud: azure
+  clusterName: aurix-aks
+  dnsSuffix: azure.aurixplatform.com
+
+aurix-core:
+  serviceAccount:
+    annotations:
+      azure.workload.identity/client-id: CLIENT_ID
+  nodeSelector:
+    agentpool: general
+
+aurix-gateway:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+  ingress:
+    enabled: true
+    className: azure-application-gateway
+    annotations:
+      appgw.ingress.kubernetes.io/use-private-ip: "false"
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+
+aurix-analytics:
+  nodeSelector:
+    agentpool: compute
+
+aurix-ai:
+  nodeSelector:
+    agentpool: gpu
+  tolerations:
+    - key: sku
+      operator: Equal
+      value: gpu
+      effect: NoSchedule
+
+aurix-billing:
+  nodeSelector:
+    agentpool: general
+
+aurix-baas:
+  nodeSelector:
+    agentpool: general
+
+aurix-internet-banking:
+  nodeSelector:
+    agentpool: general
+
+aurix-mobile-banking:
+  nodeSelector:
+    agentpool: general
+
+aurix-onboarding:
+  nodeSelector:
+    agentpool: general
+
+aurix-security:
+  nodeSelector:
+    agentpool: general

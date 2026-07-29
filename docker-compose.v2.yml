@@ -1,0 +1,286 @@
+# infra/docker-compose.v2.yml
+# Docker Compose alvo: 10 domínios consolidados
+# Usado EM PARALELO com docker-compose.yml (legado) durante migração
+# Para subir APENAS os domínios migrados:
+#   docker compose -f docker-compose.yml -f docker-compose.v2.yml up <service>
+
+services:
+
+  svc-banking:
+    build:
+      context: ../apps/backend/svc-banking
+      dockerfile: Dockerfile
+    container_name: svc-banking
+    ports:
+      - "8200:8200"
+    environment:
+      SERVER_PORT: 8200
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/aurix
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      redis: { condition: service_started }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-payments:
+    build:
+      context: ../apps/backend/svc-payments
+      dockerfile: Dockerfile
+    container_name: svc-payments
+    ports:
+      - "8201:8201"
+    environment:
+      SERVER_PORT: 8201
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9201/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-credit:
+    build:
+      context: ../apps/backend/svc-credit
+      dockerfile: Dockerfile
+    container_name: svc-credit
+    ports:
+      - "8202:8202"
+    environment:
+      SERVER_PORT: 8202
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9202/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-products:
+    build:
+      context: ../apps/backend/svc-products
+      dockerfile: Dockerfile
+    container_name: svc-products
+    ports:
+      - "8203:8203"
+    environment:
+      SERVER_PORT: 8203
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9203/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-customer:
+    build:
+      context: ../apps/backend/svc-customer
+      dockerfile: Dockerfile
+    container_name: svc-customer
+    ports:
+      - "8204:8204"
+    environment:
+      SERVER_PORT: 8204
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/aurix
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/aurix/protocol/openid-connect/certs
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9204/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-fraud:
+    build:
+      context: ../apps/backend/svc-fraud
+      dockerfile: Dockerfile
+    container_name: svc-fraud
+    ports:
+      - "8205:8205"
+    environment:
+      SERVER_PORT: 8205
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      redis: { condition: service_started }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9205/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-compliance:
+    build:
+      context: ../apps/backend/svc-compliance
+      dockerfile: Dockerfile
+    container_name: svc-compliance
+    ports:
+      - "8206:8206"
+    environment:
+      SERVER_PORT: 8206
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9206/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-finance-mgmt:
+    build:
+      context: ../apps/backend/svc-finance-mgmt
+      dockerfile: Dockerfile
+    container_name: svc-finance-mgmt
+    ports:
+      - "8207:8207"
+    environment:
+      SERVER_PORT: 8207
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9207/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-platform:
+    build:
+      context: ../apps/backend/svc-platform
+      dockerfile: Dockerfile
+    container_name: svc-platform
+    ports:
+      - "8208:8208"
+    environment:
+      SERVER_PORT: 8208
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9208/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  svc-intelligence:
+    build:
+      context: ../apps/backend/svc-intelligence
+      dockerfile: Dockerfile
+    container_name: svc-intelligence
+    ports:
+      - "8209:8209"
+    environment:
+      SERVER_PORT: 8209
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9209/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  aurix-network:
+    external: true

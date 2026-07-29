@@ -1,0 +1,38 @@
+global:
+  environment: dev
+  imageTag: latest
+  imagePullPolicy: Always
+
+aurix-core:
+  replicaCount: 1
+  env:
+    SPRING_PROFILES_ACTIVE: dev
+  service:
+    type: ClusterIP
+  autoscaling:
+    enabled: false
+  pdb:
+    enabled: false
+
+aurix-gateway:
+  replicaCount: 1
+  service:
+    type: LoadBalancer
+  autoscaling:
+    enabled: false
+  pdb:
+    enabled: false
+
+aurix-ai:
+  replicaCount: 1
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 200m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  autoscaling:
+    enabled: false
+  pdb:
+    enabled: false

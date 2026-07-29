@@ -1,0 +1,269 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: aurix-postgres
+    environment:
+      POSTGRES_DB: aurix_core_banking
+      POSTGRES_USER: aurix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aurix123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - aurix-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: aurix-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - aurix-network
+
+  # AUREUS Core Banking
+  aurix-core:
+    build:
+      context: ./aurix-core
+      dockerfile: Dockerfile
+    container_name: aurix-core
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+    volumes:
+      - ./aurix-core/logs:/app/logs
+
+  # AUREUS PIX
+  aurix-pix:
+    build:
+      context: ./aurix-pix
+      dockerfile: Dockerfile
+    container_name: aurix-pix
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Credit
+  aurix-credit:
+    build:
+      context: ./aurix-credit
+      dockerfile: Dockerfile
+    container_name: aurix-credit
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Treasury
+  aurix-treasury:
+    build:
+      context: ./aurix-treasury
+      dockerfile: Dockerfile
+    container_name: aurix-treasury
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Security
+  aurix-security:
+    build:
+      context: ./aurix-security
+      dockerfile: Dockerfile
+    container_name: aurix-security
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8085:8085"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Compliance
+  aurix-compliance:
+    build:
+      context: ./aurix-compliance
+      dockerfile: Dockerfile
+    container_name: aurix-compliance
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8086:8086"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Analytics
+  aurix-analytics:
+    build:
+      context: ./aurix-analytics
+      dockerfile: Dockerfile
+    container_name: aurix-analytics
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8101:8101"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Audit
+  aurix-audit:
+    build:
+      context: ./aurix-audit
+      dockerfile: Dockerfile
+    container_name: aurix-audit
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8088:8088"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Gateway
+  aurix-gateway:
+    build:
+      context: ./aurix-gateway
+      dockerfile: Dockerfile
+    container_name: aurix-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    networks:
+      - aurix-network
+
+  # AUREUS Organization
+  aurix-organization:
+    build:
+      context: ./aurix-organization
+      dockerfile: Dockerfile
+    container_name: aurix-organization
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
+      SPRING_DATASOURCE_USERNAME: aurix
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    ports:
+      - "8100:8100"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aurix-network
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: aurix-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - aurix-core
+      - aurix-pix
+      - aurix-credit
+      - aurix-treasury
+      - aurix-security
+      - aurix-compliance
+      - aurix-analytics
+      - aurix-audit
+      - aurix-gateway
+      - aurix-organization
+    networks:
+      - aurix-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  aurix-network:
+    driver: bridge

@@ -1,0 +1,60 @@
+global:
+  cloud: gcp
+  clusterName: aurix-gke
+  dnsSuffix: gcp.aurixplatform.com
+
+aurix-core:
+  serviceAccount:
+    annotations:
+      iam.gke.io/gcp-service-account: aurix-core-sa@PROJECT_ID.iam.gserviceaccount.com
+  nodeSelector:
+    cloud.google.com/machine-family: general
+
+aurix-gateway:
+  service:
+    type: LoadBalancer
+    annotations:
+      networking.gke.io/load-balancer-type: External
+  ingress:
+    enabled: true
+    className: gce
+    annotations:
+      kubernetes.io/ingress.global-static-ip-name: aurix-gateway-ip
+      networking.gke.io/managed-certificates: aurix-gateway-cert
+      kubernetes.io/ingress.allow-http: "false"
+
+aurix-analytics:
+  nodeSelector:
+    cloud.google.com/machine-family: compute-optimized
+
+aurix-ai:
+  nodeSelector:
+    cloud.google.com/gke-accelerator: nvidia-tesla-t4
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+
+aurix-billing:
+  nodeSelector:
+    cloud.google.com/machine-family: general
+
+aurix-baas:
+  nodeSelector:
+    cloud.google.com/machine-family: general
+
+aurix-internet-banking:
+  nodeSelector:
+    cloud.google.com/machine-family: general
+
+aurix-mobile-banking:
+  nodeSelector:
+    cloud.google.com/machine-family: general
+
+aurix-onboarding:
+  nodeSelector:
+    cloud.google.com/machine-family: general
+
+aurix-security:
+  nodeSelector:
+    cloud.google.com/machine-family: general

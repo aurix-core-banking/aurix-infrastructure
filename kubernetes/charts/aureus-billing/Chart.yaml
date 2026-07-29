@@ -1,0 +1,6 @@
+apiVersion: v2
+name: aurix-billing
+description: Aurix billing service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

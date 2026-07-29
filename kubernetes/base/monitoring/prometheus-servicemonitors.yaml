@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aurix-microservices
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: aurix-platform
+  namespaceSelector:
+    matchNames:
+    - aurix-platform
+  endpoints:
+  - port: management
+    interval: 15s
+    path: /actuator/prometheus
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      targetLabel: service
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istio-proxies
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  jobLabel: app
+  selector:
+    matchLabels:
+      app: istio-proxy
+  namespaceSelector:
+    any: true
+  endpoints:
+  - port: http-envoy-prom
+    interval: 15s
+    path: /stats/prometheus

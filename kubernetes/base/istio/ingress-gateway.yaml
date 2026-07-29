@@ -1,0 +1,46 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: aurix-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*.aurix-platform.com"
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "*.aurix-platform.com"
+    tls:
+      mode: SIMPLE
+      credentialName: aurix-platform-tls
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: aurix-ingress
+  namespace: aurix-platform
+spec:
+  hosts:
+  - "api.aurix-platform.com"
+  gateways:
+  - istio-system/aurix-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/
+    route:
+    - destination:
+        host: aurix-gateway
+        port:
+          number: 8080

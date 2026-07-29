@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: microservices
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/anomalyco/aurix-platform
+      revision: HEAD
+      directories:
+      - path: infra/kubernetes/charts/aurix-*
+  template:
+    metadata:
+      name: '{{path.basename}}'
+      labels:
+        app.kubernetes.io/part-of: aurix-platform
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/anomalyco/aurix-platform
+        targetRevision: HEAD
+        path: '{{path}}'
+        helm:
+          valueFiles:
+          - values.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: aurix-platform
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 3
+        syncOptions:
+        - CreateNamespace=true

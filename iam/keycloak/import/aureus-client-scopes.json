@@ -1,0 +1,170 @@
+[
+  {
+    "id": "aurix-cpf",
+    "name": "aurix-cpf",
+    "description": "CPF do usuário no sistema AUREUS",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "true",
+      "consent.screen.text": "Acesso ao CPF do usuário"
+    },
+    "protocolMappers": [
+      {
+        "id": "cpf-mapper",
+        "name": "CPF Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "user.attribute": "cpf",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "cpf",
+          "jsonType.label": "String"
+        }
+      }
+    ]
+  },
+  {
+    "id": "aurix-matricula",
+    "name": "aurix-matricula",
+    "description": "Matrícula do funcionário no sistema AUREUS",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "true",
+      "consent.screen.text": "Acesso à matrícula do funcionário"
+    },
+    "protocolMappers": [
+      {
+        "id": "matricula-mapper",
+        "name": "Matrícula Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "user.attribute": "matricula",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "matricula",
+          "jsonType.label": "String"
+        }
+      }
+    ]
+  },
+  {
+    "id": "aurix-departamento",
+    "name": "aurix-departamento",
+    "description": "Departamento do funcionário no sistema AUREUS",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "true",
+      "consent.screen.text": "Acesso ao departamento do funcionário"
+    },
+    "protocolMappers": [
+      {
+        "id": "departamento-mapper",
+        "name": "Departamento Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "user.attribute": "departamento",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "departamento",
+          "jsonType.label": "String"
+        }
+      }
+    ]
+  },
+  {
+    "id": "aurix-cargo",
+    "name": "aurix-cargo",
+    "description": "Cargo do funcionário no sistema AUREUS",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "true",
+      "consent.screen.text": "Acesso ao cargo do funcionário"
+    },
+    "protocolMappers": [
+      {
+        "id": "cargo-mapper",
+        "name": "Cargo Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "user.attribute": "cargo",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "cargo",
+          "jsonType.label": "String"
+        }
+      }
+    ]
+  },
+  {
+    "id": "aurix-conta",
+    "name": "aurix-conta",
+    "description": "Número da conta do cliente no sistema AUREUS",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "true",
+      "consent.screen.text": "Acesso ao número da conta"
+    },
+    "protocolMappers": [
+      {
+        "id": "conta-mapper",
+        "name": "Conta Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "user.attribute": "conta",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "conta",
+          "jsonType.label": "String"
+        }
+      }
+    ]
+  },
+  {
+    "id": "aurix-tipo-conta",
+    "name": "aurix-tipo-conta",
+    "description": "Tipo da conta do cliente no sistema AUREUS",
+    "protocol": "openid-connect",
+    "attributes": {
+      "include.in.token.scope": "true",
+      "display.on.consent.screen": "true",
+      "consent.screen.text": "Acesso ao tipo da conta"
+    },
+    "protocolMappers": [
+      {
+        "id": "tipo-conta-mapper",
+        "name": "Tipo Conta Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-usermodel-attribute-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "user.attribute": "tipo_conta",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "tipo_conta",
+          "jsonType.label": "String"
+        }
+      }
+    ]
+  }
+]

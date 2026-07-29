@@ -1,0 +1,132 @@
+groups:
+  - name: keycloak-alerts
+    rules:
+      # Alerta para alta taxa de erros HTTP
+      - alert: KeycloakHighErrorRate
+        expr: rate(keycloak_http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Alta taxa de erros 5xx no Keycloak"
+          description: "Taxa de erros 5xx no Keycloak está acima de 0.1 req/s por mais de 2 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-errors"
+
+      # Alerta para alta latência
+      - alert: KeycloakHighLatency
+        expr: histogram_quantile(0.95, rate(keycloak_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Alta latência no Keycloak"
+          description: "Latência P95 do Keycloak está acima de 2s por mais de 5 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-latency"
+
+      # Alerta para muitas tentativas de login falhadas
+      - alert: KeycloakHighFailedLogins
+        expr: rate(keycloak_failed_logins_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Muitas tentativas de login falhadas no Keycloak"
+          description: "Taxa de logins falhados no Keycloak está acima de 10/min por mais de 1 minuto"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-failed-logins"
+
+      # Alerta para Keycloak indisponível
+      - alert: KeycloakDown
+        expr: up{job="keycloak"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Keycloak está indisponível"
+          description: "Keycloak não está respondendo há mais de 1 minuto"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-down"
+
+      # Alerta para muitas sessões ativas
+      - alert: KeycloakHighActiveSessions
+        expr: keycloak_sessions_active > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Muitas sessões ativas no Keycloak"
+          description: "Número de sessões ativas no Keycloak está acima de 1000 por mais de 5 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-sessions"
+
+      # Alerta para baixa taxa de requisições (possível problema)
+      - alert: KeycloakLowRequestRate
+        expr: rate(keycloak_http_requests_total[5m]) < 0.01
+        for: 10m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Baixa taxa de requisições no Keycloak"
+          description: "Taxa de requisições no Keycloak está muito baixa (< 0.01 req/s) por mais de 10 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-low-traffic"
+
+      # Alerta para uso de memória alto
+      - alert: KeycloakHighMemoryUsage
+        expr: (jvm_memory_used_bytes{job="keycloak", area="heap"} / jvm_memory_max_bytes{job="keycloak", area="heap"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Alto uso de memória no Keycloak"
+          description: "Uso de memória heap no Keycloak está acima de 80% por mais de 5 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-memory"
+
+      # Alerta para GC frequente
+      - alert: KeycloakFrequentGC
+        expr: rate(jvm_gc_collection_seconds_total{job="keycloak"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Garbage Collection frequente no Keycloak"
+          description: "Taxa de GC no Keycloak está acima de 0.1/s por mais de 5 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-gc"
+
+      # Alerta para conexões de banco de dados
+      - alert: KeycloakDatabaseConnectionIssues
+        expr: keycloak_database_connections_active / keycloak_database_connections_max > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Alto uso de conexões de banco no Keycloak"
+          description: "Uso de conexões de banco no Keycloak está acima de 80% por mais de 2 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-database"
+
+      # Alerta para tempo de resposta de autenticação
+      - alert: KeycloakSlowAuthentication
+        expr: histogram_quantile(0.95, rate(keycloak_authentication_duration_seconds_bucket[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: keycloak
+          component: iam
+        annotations:
+          summary: "Autenticação lenta no Keycloak"
+          description: "Tempo P95 de autenticação no Keycloak está acima de 5s por mais de 3 minutos"
+          runbook_url: "https://aurix.com/docs/runbooks/keycloak-auth-slow"

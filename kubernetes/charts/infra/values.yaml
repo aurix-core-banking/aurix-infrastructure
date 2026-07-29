@@ -1,0 +1,63 @@
+istio:
+  global:
+    meshID: aurix-mesh
+    multiCluster:
+      clusterName: aurix-primary
+    network: aurix-network
+
+cert-manager:
+  installCRDs: true
+  startupapicheck:
+    enabled: false
+
+external-secrets:
+  installCRDs: true
+  serviceAccount:
+    create: true
+    name: external-secrets-sa
+
+velero:
+  configuration:
+    provider: aws
+    backupStorageLocation:
+      bucket: aurix-velero-backups
+    volumeSnapshotLocation:
+      config:
+        region: us-east-1
+  credentials:
+    useSecret: false
+    existingSecret: velero-credentials
+  schedules:
+    daily:
+      schedule: "0 2 * * *"
+      template:
+        ttl: "720h"
+
+prometheus:
+  grafana:
+    adminPassword: changeme
+    ingress:
+      enabled: true
+      hosts: ["grafana.aurix-platform.com"]
+  alertmanager:
+    enabled: true
+  prometheus:
+    prometheusSpec:
+      retention: 15d
+      retentionSize: 50GB
+
+elastic:
+  createOperator: true
+  createCustomResource: false
+
+vault:
+  server:
+    dev:
+      enabled: false
+    ha:
+      enabled: true
+      replicas: 3
+    serviceAccount:
+      create: true
+    ui:
+      enabled: true

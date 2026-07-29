@@ -1,0 +1,18 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/spi-str/spi/pix"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "sucesso": true,
+      "endToEndId": "E0000000020240710XXXXXXXXXXXX",
+      "status": "LIQUIDADA",
+      "dataHoraLiquidacao": "{{now}}",
+      "ispbDestino": "12345678",
+      "mensagem": "Transacao PIX liquidada com sucesso (simulacao)"
+    },
+    "headers": { "Content-Type": "application/json" }
+  }
+}

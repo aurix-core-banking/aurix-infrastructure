@@ -1,0 +1,139 @@
+name: Resource Optimization
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM
+  workflow_dispatch:
+
+jobs:
+  resource-optimization:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Run EC2 Instance Optimization
+      run: |
+        aws compute-optimizer get-ec2-instance-recommendations \
+          --output json > ec2-recommendations.json
+    
+    - name: Run EBS Volume Optimization
+      run: |
+        aws compute-optimizer get-ebs-volume-recommendations \
+          --output json > ebs-recommendations.json
+    
+    - name: Run Lambda Function Optimization
+      run: |
+        aws compute-optimizer get-lambda-function-recommendations \
+          --output json > lambda-recommendations.json
+    
+    - name: Run RDS Instance Optimization
+      run: |
+        aws compute-optimizer get-rds-instance-recommendations \
+          --output json > rds-recommendations.json
+    
+    - name: Run Auto Scaling Group Optimization
+      run: |
+        aws compute-optimizer get-auto-scaling-group-recommendations \
+          --output json > asg-recommendations.json
+    
+    - name: Run ECS Service Optimization
+      run: |
+        aws compute-optimizer get-ecs-service-recommendations \
+          --output json > ecs-recommendations.json
+    
+    - name: Run ElastiCache Optimization
+      run: |
+        aws compute-optimizer get-elasticache-recommendations \
+          --output json > elasticache-recommendations.json
+    
+    - name: Run DynamoDB Optimization
+      run: |
+        aws compute-optimizer get-dynamodb-table-recommendations \
+          --output json > dynamodb-recommendations.json
+    
+    - name: Run S3 Storage Optimization
+      run: |
+        aws s3api list-buckets \
+          --output json > s3-buckets.json
+        
+        aws s3api get-bucket-analytics-configuration \
+          --bucket aurix-platform-bucket \
+          --id cost-optimization \
+          --output json > s3-analytics.json
+    
+    - name: Run CloudWatch Metrics Analysis
+      run: |
+        aws cloudwatch get-metric-statistics \
+          --namespace AWS/EC2 \
+          --metric-name CPUUtilization \
+          --dimensions Name=InstanceId,Value=i-1234567890abcdef0 \
+          --start-time 2024-01-01T00:00:00Z \
+          --end-time 2024-12-31T23:59:59Z \
+          --period 3600 \
+          --statistics Average \
+          --output json > cloudwatch-metrics.json
+    
+    - name: Run Cost and Usage Analysis
+      run: |
+        aws ce get-cost-and-usage \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --granularity MONTHLY \
+          --metrics BlendedCost \
+          --group-by Type=DIMENSION,Key=SERVICE \
+          --output json > cost-usage.json
+    
+    - name: Run Rightsizing Recommendations
+      run: |
+        aws ce get-rightsizing-recommendation \
+          --service AmazonEC2 \
+          --output json > rightsizing-recommendations.json
+    
+    - name: Run Reserved Instance Recommendations
+      run: |
+        aws ce get-reservation-purchase-recommendation \
+          --service AmazonEC2 \
+          --output json > reserved-instance-recommendations.json
+    
+    - name: Run Savings Plans Recommendations
+      run: |
+        aws ce get-savings-plans-purchase-recommendation \
+          --lookback-period-in-days 30 \
+          --term-in-years 1 \
+          --payment-option NO_UPFRONT \
+          --output json > savings-plans-recommendations.json
+    
+    - name: Run Cost Anomaly Detection
+      run: |
+        aws ce get-anomalies \
+          --date-interval Start=2024-01-01,End=2024-12-31 \
+          --output json > cost-anomalies.json
+    
+    - name: Run Cost Allocation Tags Analysis
+      run: |
+        aws ce get-tags \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --output json > cost-allocation-tags.json
+    
+    - name: Run Cost Categories Analysis
+      run: |
+        aws ce get-cost-categories \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --output json > cost-categories.json
+    
+    - name: Generate Optimization Report
+      run: |
+        python scripts/generate-optimization-report.py
+    
+    - name: Upload Optimization Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: optimization-report
+        path: optimization-report.html

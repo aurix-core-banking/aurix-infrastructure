@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPattern": "/api/spi-str/spi/status/.*"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "endToEndId": "E0000000020240710XXXXXXXXXXXX",
+      "status": "LIQUIDADA"
+    }
+  }
+}

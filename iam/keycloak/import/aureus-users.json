@@ -1,0 +1,113 @@
+[
+  {
+    "id": "admin-user",
+    "username": "admin",
+    "enabled": true,
+    "emailVerified": true,
+    "firstName": "Administrador",
+    "lastName": "AUREUS",
+    "email": "admin@aurix.com.br",
+    "credentials": [
+      {
+        "id": "admin-password",
+        "type": "password",
+        "userLabel": "admin",
+        "value": "admin123",
+        "temporary": false
+      }
+    ],
+    "realmRoles": [
+      "admin"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "cpf": ["00000000000"],
+      "matricula": ["AUREUS001"],
+      "departamento": ["Tecnologia"],
+      "cargo": ["Administrador do Sistema"]
+    }
+  },
+  {
+    "id": "gerente-user",
+    "username": "gerente",
+    "enabled": true,
+    "emailVerified": true,
+    "firstName": "João",
+    "lastName": "Silva",
+    "email": "gerente@aurix.com.br",
+    "credentials": [
+      {
+        "id": "gerente-password",
+        "type": "password",
+        "userLabel": "gerente",
+        "value": "gerente123",
+        "temporary": false
+      }
+    ],
+    "realmRoles": [
+      "gerente"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "cpf": ["12345678901"],
+      "matricula": ["AUREUS002"],
+      "departamento": ["Operações"],
+      "cargo": ["Gerente de Operações"]
+    }
+  },
+  {
+    "id": "operador-user",
+    "username": "operador",
+    "enabled": true,
+    "emailVerified": true,
+    "firstName": "Maria",
+    "lastName": "Santos",
+    "email": "operador@aurix.com.br",
+    "credentials": [
+      {
+        "id": "operador-password",
+        "type": "password",
+        "userLabel": "operador",
+        "value": "operador123",
+        "temporary": false
+      }
+    ],
+    "realmRoles": [
+      "operador"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "cpf": ["98765432100"],
+      "matricula": ["AUREUS003"],
+      "departamento": ["Operações"],
+      "cargo": ["Operador de Sistema"]
+    }
+  },
+  {
+    "id": "cliente-user",
+    "username": "cliente.teste",
+    "enabled": true,
+    "emailVerified": true,
+    "firstName": "Pedro",
+    "lastName": "Oliveira",
+    "email": "cliente@email.com",
+    "credentials": [
+      {
+        "id": "cliente-password",
+        "type": "password",
+        "userLabel": "cliente",
+        "value": "cliente123",
+        "temporary": false
+      }
+    ],
+    "realmRoles": [
+      "cliente"
+    ],
+    "clientRoles": {},
+    "attributes": {
+      "cpf": ["11122233344"],
+      "conta": ["12345-6"],
+      "tipo_conta": ["CORRENTE"]
+    }
+  }
+]

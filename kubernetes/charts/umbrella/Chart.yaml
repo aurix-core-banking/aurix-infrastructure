@@ -1,0 +1,115 @@
+apiVersion: v2
+name: umbrella
+description: Aurix Platform umbrella chart — deploys all microservices
+type: application
+version: 0.1.0
+appVersion: "1.0"
+dependencies:
+  - name: aurix-core
+    version: "0.1.0"
+    repository: "file://../aurix-core"
+  - name: aurix-gateway
+    version: "0.1.0"
+    repository: "file://../aurix-gateway"
+  - name: aurix-pix
+    version: "0.1.0"
+    repository: "file://../aurix-pix"
+  - name: aurix-bacen
+    version: "0.1.0"
+    repository: "file://../aurix-bacen"
+  - name: aurix-onboarding
+    version: "0.1.0"
+    repository: "file://../aurix-onboarding"
+  - name: aurix-security
+    version: "0.1.0"
+    repository: "file://../aurix-security"
+  - name: aurix-openfinance
+    version: "0.1.0"
+    repository: "file://../aurix-openfinance"
+  - name: aurix-analytics
+    version: "0.1.0"
+    repository: "file://../aurix-analytics"
+  - name: aurix-catalog
+    version: "0.1.0"
+    repository: "file://../aurix-catalog"
+  - name: aurix-credit
+    version: "0.1.0"
+    repository: "file://../aurix-credit"
+  - name: aurix-cartoes
+    version: "0.1.0"
+    repository: "file://../aurix-cartoes"
+  - name: aurix-consignado
+    version: "0.1.0"
+    repository: "file://../aurix-consignado"
+  - name: aurix-financiamento
+    version: "0.1.0"
+    repository: "file://../aurix-financiamento"
+  - name: aurix-cambio
+    version: "0.1.0"
+    repository: "file://../aurix-cambio"
+  - name: aurix-seguros
+    version: "0.1.0"
+    repository: "file://../aurix-seguros"
+  - name: aurix-investimento
+    version: "0.1.0"
+    repository: "file://../aurix-investimento"
+  - name: aurix-salario
+    version: "0.1.0"
+    repository: "file://../aurix-salario"
+  - name: aurix-poupanca
+    version: "0.1.0"
+    repository: "file://../aurix-poupanca"
+  - name: aurix-accounting
+    version: "0.1.0"
+    repository: "file://../aurix-accounting"
+  - name: aurix-billing
+    version: "0.1.0"
+    repository: "file://../aurix-billing"
+  - name: aurix-compliance
+    version: "0.1.0"
+    repository: "file://../aurix-compliance"
+  - name: aurix-audit
+    version: "0.1.0"
+    repository: "file://../aurix-audit"
+  - name: aurix-webhooks
+    version: "0.1.0"
+    repository: "file://../aurix-webhooks"
+  - name: aurix-organization
+    version: "0.1.0"
+    repository: "file://../aurix-organization"
+  - name: aurix-provisioning
+    version: "0.1.0"
+    repository: "file://../aurix-provisioning"
+  - name: aurix-treasury
+    version: "0.1.0"
+    repository: "file://../aurix-treasury"
+  - name: aurix-tax
+    version: "0.1.0"
+    repository: "file://../aurix-tax"
+  - name: aurix-cost
+    version: "0.1.0"
+    repository: "file://../aurix-cost"
+  - name: aurix-budget
+    version: "0.1.0"
+    repository: "file://../aurix-budget"
+  - name: aurix-settlement
+    version: "0.1.0"
+    repository: "file://../aurix-settlement"
+  - name: aurix-pricing
+    version: "0.1.0"
+    repository: "file://../aurix-pricing"
+  - name: aurix-baas
+    version: "0.1.0"
+    repository: "file://../aurix-baas"
+  - name: aurix-internet-banking
+    version: "0.1.0"
+    repository: "file://../aurix-internet-banking"
+  - name: aurix-mobile-banking
+    version: "0.1.0"
+    repository: "file://../aurix-mobile-banking"
+  - name: aurix-ai
+    version: "0.1.0"
+    repository: "file://../aurix-ai"
+  - name: aurix-controller
+    version: "0.1.0"
+    repository: "file://../aurix-controller"

@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra
+  namespace: argocd
+spec:
+  description: Cluster infrastructure components
+  sourceRepos:
+  - 'https://charts.istio.io'
+  - 'https://charts.jetstack.io'
+  - 'https://charts.external-secrets.io'
+  - 'https://vmware-tanzu.github.io/helm-charts'
+  - 'https://prometheus-community.github.io/helm-charts'
+  - 'https://helm.elastic.co'
+  - 'https://helm.hashicorp.com'
+  destinations:
+  - namespace: 'istio-system'
+    server: 'https://kubernetes.default.svc'
+  - namespace: 'cert-manager'
+    server: 'https://kubernetes.default.svc'
+  - namespace: 'external-secrets'
+    server: 'https://kubernetes.default.svc'
+  - namespace: 'velero'
+    server: 'https://kubernetes.default.svc'
+  - namespace: 'monitoring'
+    server: 'https://kubernetes.default.svc'
+  - namespace: 'elastic-system'
+    server: 'https://kubernetes.default.svc'
+  - namespace: 'vault'
+    server: 'https://kubernetes.default.svc'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'

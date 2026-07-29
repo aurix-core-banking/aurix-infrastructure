@@ -1,0 +1,110 @@
+name: Cost Monitoring and Optimization
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday at 9 AM
+  workflow_dispatch:
+
+jobs:
+  cost-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Run AWS Cost Explorer
+      run: |
+        aws ce get-cost-and-usage \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --granularity MONTHLY \
+          --metrics BlendedCost \
+          --group-by Type=DIMENSION,Key=SERVICE \
+          --output json > cost-analysis.json
+    
+    - name: Run AWS Budgets Check
+      run: |
+        aws budgets describe-budgets \
+          --account-id ${{ secrets.AWS_ACCOUNT_ID }} \
+          --output json > budgets.json
+    
+    - name: Run AWS Trusted Advisor
+      run: |
+        aws support describe-trusted-advisor-checks \
+          --language en \
+          --output json > trusted-advisor.json
+    
+    - name: Run AWS Resource Optimization
+      run: |
+        aws compute-optimizer get-recommendation-summaries \
+          --output json > compute-optimizer.json
+    
+    - name: Run AWS Rightsizing
+      run: |
+        aws ce get-rightsizing-recommendation \
+          --service AmazonEC2 \
+          --output json > rightsizing.json
+    
+    - name: Run AWS Reserved Instance Analysis
+      run: |
+        aws ce get-reservation-coverage \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --granularity MONTHLY \
+          --output json > reserved-instances.json
+    
+    - name: Run AWS Spot Instance Analysis
+      run: |
+        aws ec2 describe-spot-price-history \
+          --instance-types t3.micro,t3.small,t3.medium \
+          --product-descriptions "Linux/UNIX" \
+          --output json > spot-prices.json
+    
+    - name: Run AWS Savings Plans Analysis
+      run: |
+        aws ce get-savings-plans-utilization \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --granularity MONTHLY \
+          --output json > savings-plans.json
+    
+    - name: Run AWS Cost Anomaly Detection
+      run: |
+        aws ce get-anomalies \
+          --date-interval Start=2024-01-01,End=2024-12-31 \
+          --output json > anomalies.json
+    
+    - name: Run AWS Cost Allocation Tags
+      run: |
+        aws ce get-tags \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --output json > cost-allocation-tags.json
+    
+    - name: Run AWS Cost Categories
+      run: |
+        aws ce get-cost-categories \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --output json > cost-categories.json
+    
+    - name: Run AWS Cost Reports
+      run: |
+        aws ce get-cost-and-usage-with-resources \
+          --time-period Start=2024-01-01,End=2024-12-31 \
+          --granularity MONTHLY \
+          --metrics BlendedCost \
+          --group-by Type=DIMENSION,Key=SERVICE \
+          --output json > cost-reports.json
+    
+    - name: Generate Cost Report
+      run: |
+        python scripts/generate-cost-report.py
+    
+    - name: Upload Cost Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: cost-report
+        path: cost-report.html

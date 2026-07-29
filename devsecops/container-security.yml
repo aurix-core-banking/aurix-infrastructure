@@ -1,0 +1,83 @@
+name: Container Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  container-security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker images
+      run: |
+        docker build -t aurix-core:latest ./backend/aurix-core
+        docker build -t aurix-pix:latest ./backend/aurix-pix
+        docker build -t aurix-credit:latest ./backend/aurix-credit
+        docker build -t aurix-treasury:latest ./backend/aurix-treasury
+        docker build -t aurix-security:latest ./backend/aurix-security
+        docker build -t aurix-compliance:latest ./backend/aurix-compliance
+        docker build -t aurix-analytics:latest ./backend/aurix-analytics
+        docker build -t aurix-audit:latest ./backend/aurix-audit
+        docker build -t aurix-gateway:latest ./backend/aurix-gateway
+        docker build -t aurix-organization:latest ./backend/aurix-organization
+    
+    - name: Run Trivy image scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'aurix-core:latest'
+        format: 'sarif'
+        output: 'trivy-image-results.sarif'
+    
+    - name: Run Docker Bench Security
+      run: |
+        docker run --rm --net host --pid host --userns host --cap-add audit_control \
+          -e DOCKER_CONTENT_TRUST=$DOCKER_CONTENT_TRUST \
+          -v /etc:/etc:ro \
+          -v /usr/bin/containerd:/usr/bin/containerd:ro \
+          -v /usr/bin/runc:/usr/bin/runc:ro \
+          -v /usr/lib/systemd:/usr/lib/systemd:ro \
+          -v /var/lib:/var/lib:ro \
+          -v /var/run/docker.sock:/var/run/docker.sock:ro \
+          --label docker_bench_security \
+          docker/docker-bench-security
+    
+    - name: Run Falco for runtime security
+      run: |
+        docker run --rm -i \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v /dev:/host/dev \
+          -v /proc:/host/proc:ro \
+          -v /boot:/host/boot:ro \
+          -v /lib/modules:/host/lib/modules:ro \
+          -v /usr:/host/usr:ro \
+          -v /etc:/host/etc:ro \
+          falcosecurity/falco:latest \
+          falco --rules-file /etc/falco/falco_rules.yaml \
+          --rules-file /etc/falco/falco_rules.local.yaml \
+          --stdout
+    
+    - name: Run Clair vulnerability scanner
+      run: |
+        docker run --rm \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v /tmp:/tmp \
+          quay.io/coreos/clair:latest \
+          clair-scanner --ip 172.17.0.1 aurix-core:latest
+    
+    - name: Run Anchore Engine
+      run: |
+        docker run --rm \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v /tmp:/tmp \
+          anchore/anchore-engine:latest \
+          anchore-cli image add aurix-core:latest
+        docker run --rm \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v /tmp:/tmp \
+          anchore/anchore-engine:latest \
+          anchore-cli image vuln aurix-core:latest all

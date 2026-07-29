@@ -1,0 +1,262 @@
+heat_template_version: 2018-08-31
+
+description: |
+  AUREUS Platform - OpenStack Heat Template
+  Deploy complete AUREUS Core Banking platform on OpenStack
+
+parameters:
+  key_name:
+    type: string
+    description: Name of keypair to use for instances
+    default: aurix-keypair
+  
+  image_id:
+    type: string
+    description: ID of the image to use for instances
+    default: ubuntu-22.04-server-cloudimg-amd64
+  
+  flavor_id:
+    type: string
+    description: Flavor ID for instances
+    default: m1.medium
+  
+  network_id:
+    type: string
+    description: ID of the network to use
+    default: private
+  
+  external_network_id:
+    type: string
+    description: ID of the external network
+    default: public
+  
+  db_password:
+    type: string
+    description: Database password
+    hidden: true
+    default: aurix123
+  
+  redis_password:
+    type: string
+    description: Redis password
+    hidden: true
+    default: redis123
+
+resources:
+  # Security Group for AUREUS Platform
+  aurix_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: aurix-platform-sg
+      description: Security group for AUREUS Platform
+      rules:
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+          remote_ip_prefix: 0.0.0.0/0
+          description: SSH access
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 80
+          port_range_max: 80
+          remote_ip_prefix: 0.0.0.0/0
+          description: HTTP access
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+          remote_ip_prefix: 0.0.0.0/0
+          description: HTTPS access
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 8080
+          port_range_max: 8090
+          remote_ip_prefix: 0.0.0.0/0
+          description: AUREUS services
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 5432
+          port_range_max: 5432
+          remote_ip_prefix: 0.0.0.0/0
+          description: PostgreSQL access
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 6379
+          port_range_max: 6379
+          remote_ip_prefix: 0.0.0.0/0
+          description: Redis access
+        - direction: ingress
+          protocol: tcp
+          port_range_min: 9092
+          port_range_max: 9092
+          remote_ip_prefix: 0.0.0.0/0
+          description: Kafka access
+
+  # Load Balancer
+  aurix_load_balancer:
+    type: OS::Neutron::LBaaS::LoadBalancer
+    properties:
+      name: aurix-lb
+      vip_subnet: { get_resource: aurix_subnet }
+      provider: octavia
+
+  # Load Balancer Listener
+  aurix_listener:
+    type: OS::Neutron::LBaaS::Listener
+    properties:
+      name: aurix-listener
+      loadbalancer: { get_resource: aurix_load_balancer }
+      protocol: HTTP
+      protocol_port: 80
+      default_pool: { get_resource: aurix_pool }
+
+  # Load Balancer Pool
+  aurix_pool:
+    type: OS::Neutron::LBaaS::Pool
+    properties:
+      name: aurix-pool
+      protocol: HTTP
+      lb_algorithm: ROUND_ROBIN
+      listener: { get_resource: aurix_listener }
+
+  # Load Balancer Health Monitor
+  aurix_health_monitor:
+    type: OS::Neutron::LBaaS::HealthMonitor
+    properties:
+      name: aurix-health-monitor
+      pool: { get_resource: aurix_pool }
+      type: HTTP
+      delay: 10
+      timeout: 5
+      max_retries: 3
+      url_path: /health
+
+  # Subnet for AUREUS Platform
+  aurix_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: aurix-subnet
+      network: { get_resource: aurix_network }
+      cidr: 10.0.1.0/24
+      dns_nameservers:
+        - 8.8.8.8
+        - 8.8.4.4
+
+  # Network for AUREUS Platform
+  aurix_network:
+    type: OS::Neutron::Net
+    properties:
+      name: aurix-network
+
+  # Router for AUREUS Platform
+  aurix_router:
+    type: OS::Neutron::Router
+    properties:
+      name: aurix-router
+      external_gateway_info:
+        network: { get_param: external_network_id }
+
+  # Router Interface
+  aurix_router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: { get_resource: aurix_router }
+      subnet: { get_resource: aurix_subnet }
+
+  # Database Server
+  aurix_database:
+    type: OS::Nova::Server
+    properties:
+      name: aurix-database
+      image: { get_param: image_id }
+      flavor: { get_param: flavor_id }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: aurix_database_port }
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            apt-get update
+            apt-get install -y postgresql postgresql-contrib redis-server
+            
+            # Configure PostgreSQL
+            sudo -u postgres psql -c "CREATE DATABASE aurix_core_banking;"
+            sudo -u postgres psql -c "CREATE USER aurix WITH PASSWORD 'aurix123';"
+            sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE aurix_core_banking TO aurix;"
+            
+            # Configure Redis
+            echo "requirepass redis123" >> /etc/redis/redis.conf
+            systemctl restart redis-server
+            
+            # Install Docker
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            usermod -aG docker ubuntu
+            
+            # Start AUREUS services
+            docker run -d --name aurix-core -p 8080:8080 aurix-platform/aurix-core:latest
+            docker run -d --name aurix-pix -p 8081:8081 aurix-platform/aurix-pix:latest
+            docker run -d --name aurix-credit -p 8082:8082 aurix-platform/aurix-credit:latest
+            docker run -d --name aurix-treasury -p 8083:8083 aurix-platform/aurix-treasury:latest
+            docker run -d --name aurix-security -p 8084:8084 aurix-platform/aurix-security:latest
+            docker run -d --name aurix-compliance -p 8085:8085 aurix-platform/aurix-compliance:latest
+            docker run -d --name aurix-analytics -p 8086:8086 aurix-platform/aurix-analytics:latest
+            docker run -d --name aurix-audit -p 8087:8087 aurix-platform/aurix-audit:latest
+            docker run -d --name aurix-gateway -p 8088:8088 aurix-platform/aurix-gateway:latest
+            docker run -d --name aurix-organization -p 8089:8089 aurix-platform/aurix-organization:latest
+
+  # Database Port
+  aurix_database_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: aurix_network }
+      security_groups:
+        - { get_resource: aurix_security_group }
+      fixed_ips:
+        - ip_address: 10.0.1.10
+
+  # Load Balancer Member - Database
+  aurix_lb_member_db:
+    type: OS::Neutron::LBaaS::PoolMember
+    properties:
+      pool: { get_resource: aurix_pool }
+      address: { get_attr: [aurix_database, first_address] }
+      protocol_port: 8080
+      weight: 1
+
+  # Floating IP for Database
+  aurix_database_fip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: external_network_id }
+      port: { get_resource: aurix_database_port }
+
+  # Floating IP for Load Balancer
+  aurix_lb_fip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: external_network_id }
+      port: { get_attr: [aurix_load_balancer, vip_port_id] }
+
+outputs:
+  database_ip:
+    description: IP address of the database server
+    value: { get_attr: [aurix_database_fip, floating_ip_address] }
+  
+  load_balancer_ip:
+    description: IP address of the load balancer
+    value: { get_attr: [aurix_lb_fip, floating_ip_address] }
+  
+  load_balancer_url:
+    description: URL of the load balancer
+    value: { str_replace: { template: "http://%ip%", params: { ip: { get_attr: [aurix_lb_fip, floating_ip_address] } } } }
+  
+  database_url:
+    description: Database connection URL
+    value: { str_replace: { template: "postgresql://aurix:aurix123@%ip%:5432/aurix_core_banking", params: { ip: { get_attr: [aurix_database_fip, floating_ip_address] } } } }
+  
+  redis_url:
+    description: Redis connection URL
+    value: { str_replace: { template: "redis://:%password%@%ip%:6379", params: { ip: { get_attr: [aurix_database_fip, floating_ip_address] }, password: { get_param: redis_password } } } }

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "admin",
+    "name": "admin",
+    "description": "Administrador do sistema AUREUS",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "gerente",
+    "name": "gerente",
+    "description": "Gerente de operações bancárias",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "operador",
+    "name": "operador",
+    "description": "Operador de sistema bancário",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "cliente",
+    "name": "cliente",
+    "description": "Cliente do banco AUREUS",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "auditor",
+    "name": "auditor",
+    "description": "Auditor interno do sistema",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "compliance",
+    "name": "compliance",
+    "description": "Responsável por conformidade e regulamentação",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "tesouraria",
+    "name": "tesouraria",
+    "description": "Responsável pela tesouraria",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "credito",
+    "name": "credito",
+    "description": "Responsável por análise de crédito",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "pix",
+    "name": "pix",
+    "description": "Operador do sistema PIX",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  },
+  {
+    "id": "analytics",
+    "name": "analytics",
+    "description": "Analista de dados e relatórios",
+    "composite": false,
+    "clientRole": false,
+    "containerId": "aurix"
+  }
+]

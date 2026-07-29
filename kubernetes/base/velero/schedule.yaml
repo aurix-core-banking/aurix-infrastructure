@@ -1,0 +1,32 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-backup
+  namespace: velero
+spec:
+  schedule: "0 2 * * *"
+  template:
+    ttl: 720h
+    includedNamespaces:
+    - aurix-platform
+    - istio-system
+    - monitoring
+    - elastic-system
+    - cert-manager
+    - external-secrets
+    - vault
+    includedResources:
+    - deployment
+    - statefulset
+    - daemonset
+    - configmap
+    - secret
+    - pvc
+    - service
+    - ingress
+    excludeResources:
+    - pods
+    snapshotVolumes: true
+    storageLocation: default
+    volumeSnapshotLocations:
+    - default

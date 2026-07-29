@@ -1,0 +1,121 @@
+global:
+  environment: staging
+  replicas: 2
+  imageTag: staging
+  imagePullPolicy: IfNotPresent
+
+aurix-core:
+  replicaCount: 2
+  env:
+    SPRING_PROFILES_ACTIVE: staging
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 75
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+aurix-gateway:
+  replicaCount: 2
+  env:
+    SPRING_PROFILES_ACTIVE: staging
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+aurix-analytics:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1
+
+aurix-ai:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 4Gi
+      cpu: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+aurix-billing:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+aurix-settlement:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+aurix-internet-banking:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+aurix-mobile-banking:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+aurix-baas:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
