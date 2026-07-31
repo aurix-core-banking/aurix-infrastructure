@@ -1,14 +1,26 @@
-version: '3.8'
+# docker-compose.dev.yml
+# Stack mínima de INFRAESTRUTURA para desenvolvimento local.
+# Os serviços Spring Boot (svc-*) são executados a partir da IDE
+# (profile dev) apontando para esta infraestrutura.
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# Para subir a stack completa (infra + todos os serviços):
+#   docker compose up -d
 
 services:
-  # PostgreSQL Database
+  # ═══════════════════════════════════════════════════════════════════════
+  # PostgreSQL — banco de dados compartilhado (aurix_db)
+  # ═══════════════════════════════════════════════════════════════════════
   postgres:
     image: postgres:15-alpine
     container_name: aurix-postgres
     environment:
-      POSTGRES_DB: aurix_core_banking
-      POSTGRES_USER: aurix
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aurix123}
+      POSTGRES_DB: ${POSTGRES_DB:-aurix_db}
+      POSTGRES_USER: ${POSTGRES_USER:-aurix_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aurix_dev_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=pt_BR.UTF-8 --lc-ctype=pt_BR.UTF-8"
     ports:
       - "5432:5432"
     volumes:
@@ -16,8 +28,15 @@ services:
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - aurix-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aurix_user -d aurix_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Redis Cache
+  # ═══════════════════════════════════════════════════════════════════════
+  # Redis — cache e sessões
+  # ═══════════════════════════════════════════════════════════════════════
   redis:
     image: redis:7-alpine
     container_name: aurix-redis
@@ -27,242 +46,86 @@ services:
       - redis_data:/data
     networks:
       - aurix-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # AUREUS Core Banking
-  aurix-core:
-    build:
-      context: ./aurix-core
-      dockerfile: Dockerfile
-    container_name: aurix-core
+  # ═══════════════════════════════════════════════════════════════════════
+  # Kafka + Zookeeper — mensageria
+  # ═══════════════════════════════════════════════════════════════════════
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: aurix-zookeeper
     environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8081:8081"
-    depends_on:
-      - postgres
-      - redis
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     networks:
       - aurix-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: aurix-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     volumes:
-      - ./aurix-core/logs:/app/logs
-
-  # AUREUS PIX
-  aurix-pix:
-    build:
-      context: ./aurix-pix
-      dockerfile: Dockerfile
-    container_name: aurix-pix
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8082:8082"
-    depends_on:
-      - postgres
-      - redis
+      - kafka_data:/var/lib/kafka/data
     networks:
       - aurix-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  # AUREUS Credit
-  aurix-credit:
-    build:
-      context: ./aurix-credit
-      dockerfile: Dockerfile
-    container_name: aurix-credit
+  # ═══════════════════════════════════════════════════════════════════════
+  # Keycloak — autenticação (porta 8443 mapeada para 8080 do container)
+  # ═══════════════════════════════════════════════════════════════════════
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: aurix-keycloak
+    command: start-dev
     environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: aurix_user
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-aurix_dev_password}
+      KC_HTTP_PORT: 8080
     ports:
-      - "8083:8083"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Treasury
-  aurix-treasury:
-    build:
-      context: ./aurix-treasury
-      dockerfile: Dockerfile
-    container_name: aurix-treasury
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8084:8084"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Security
-  aurix-security:
-    build:
-      context: ./aurix-security
-      dockerfile: Dockerfile
-    container_name: aurix-security
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8085:8085"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Compliance
-  aurix-compliance:
-    build:
-      context: ./aurix-compliance
-      dockerfile: Dockerfile
-    container_name: aurix-compliance
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8086:8086"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Analytics
-  aurix-analytics:
-    build:
-      context: ./aurix-analytics
-      dockerfile: Dockerfile
-    container_name: aurix-analytics
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8101:8101"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Audit
-  aurix-audit:
-    build:
-      context: ./aurix-audit
-      dockerfile: Dockerfile
-    container_name: aurix-audit
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8088:8088"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Gateway
-  aurix-gateway:
-    build:
-      context: ./aurix-gateway
-      dockerfile: Dockerfile
-    container_name: aurix-gateway
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8080:8080"
-    depends_on:
-      - redis
-    networks:
-      - aurix-network
-
-  # AUREUS Organization
-  aurix-organization:
-    build:
-      context: ./aurix-organization
-      dockerfile: Dockerfile
-    container_name: aurix-organization
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_core_banking
-      SPRING_DATASOURCE_USERNAME: aurix
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix123}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-    ports:
-      - "8100:8100"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - aurix-network
-
-  # Nginx Load Balancer
-  nginx:
-    image: nginx:alpine
-    container_name: aurix-nginx
-    ports:
-      - "80:80"
-      - "443:443"
+      - "8443:8080"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
+      - keycloak_data:/opt/keycloak/data
     depends_on:
-      - aurix-core
-      - aurix-pix
-      - aurix-credit
-      - aurix-treasury
-      - aurix-security
-      - aurix-compliance
-      - aurix-analytics
-      - aurix-audit
-      - aurix-gateway
-      - aurix-organization
+      postgres:
+        condition: service_healthy
     networks:
       - aurix-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /realms/aurix HTTP/1.0\r\n\r' >&3 && grep -q '200' <&3 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
+# ═══════════════════════════════════════════════════════════════════════
+# VOLUMES & NETWORKS
+# ═══════════════════════════════════════════════════════════════════════
 volumes:
   postgres_data:
   redis_data:
+  kafka_data:
+  keycloak_data:
 
 networks:
   aurix-network:
