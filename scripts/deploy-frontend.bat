@@ -2,6 +2,9 @@
 setlocal
 set SCRIPT_DIR=%~dp0
 set ROOT_DIR=%SCRIPT_DIR%..\..
+set FRONTEND_DIR=%ROOT_DIR%\aurix-frontend
+set ADMIN_DIR=%FRONTEND_DIR%\aurix-admin
+set WEB_DIR=%FRONTEND_DIR%\aurix-web
 
 set FRONTEND_API_URL=%FRONTEND_API_URL%
 if "%FRONTEND_API_URL%"=="" set FRONTEND_API_URL=http://localhost:8080
@@ -16,6 +19,15 @@ echo   Upload to cloud:      %FRONTEND_UPLOAD%
 if not "%FRONTEND_S3_BUCKET_ADMIN%"=="" echo   S3 bucket (admin):     %FRONTEND_S3_BUCKET_ADMIN%
 if not "%FRONTEND_S3_BUCKET_WEB%"=="" echo   S3 bucket (web):      %FRONTEND_S3_BUCKET_WEB%
 echo.
+
+if not exist "%ADMIN_DIR%" (
+  echo ERRO: diretorio nao encontrado: %ADMIN_DIR%
+  exit /b 1
+)
+if not exist "%WEB_DIR%" (
+  echo ERRO: diretorio nao encontrado: %WEB_DIR%
+  exit /b 1
+)
 
 set FRONTEND_API_URL=%FRONTEND_API_URL%
 call "%SCRIPT_DIR%build-frontend.bat"
@@ -38,11 +50,11 @@ if errorlevel 1 (
 )
 if not "%FRONTEND_S3_BUCKET_ADMIN%"=="" (
   echo Uploading admin to s3://%FRONTEND_S3_BUCKET_ADMIN% ...
-  aws s3 sync "%ROOT_DIR%\frontend\aurix-admin\build" "s3://%FRONTEND_S3_BUCKET_ADMIN%" --delete
+  aws s3 sync "%ADMIN_DIR%\build" "s3://%FRONTEND_S3_BUCKET_ADMIN%" --delete
 )
 if not "%FRONTEND_S3_BUCKET_WEB%"=="" (
   echo Uploading web to s3://%FRONTEND_S3_BUCKET_WEB% ...
-  aws s3 sync "%ROOT_DIR%\frontend\aurix-web\build" "s3://%FRONTEND_S3_BUCKET_WEB%" --delete
+  aws s3 sync "%WEB_DIR%\build" "s3://%FRONTEND_S3_BUCKET_WEB%" --delete
 )
 echo Frontend upload complete.
 endlocal

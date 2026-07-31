@@ -8,6 +8,7 @@ INFRA_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$INFRA_DIR"
 
 echo "AUREUS Core Banking - Encerrando servicos..."
-docker-compose down
+docker compose -f docker-compose.v2.yml down
+docker compose -f docker-compose.dev.yml down
 
 echo "AUREUS Core Banking encerrado."
