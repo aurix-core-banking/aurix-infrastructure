@@ -1,0 +1,14 @@
+# Provisionamento automático de dashboards do Grafana (Aurix).
+apiVersion: 1
+
+providers:
+  - name: 'aurix'
+    orgId: 1
+    folder: 'Aurix'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

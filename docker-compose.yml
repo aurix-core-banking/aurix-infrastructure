@@ -11,6 +11,8 @@ services:
       - "--providers.file.filename=/etc/traefik/dynamic.yml"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:8080"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=web"
     ports:
       - "8080:8080"
     volumes:
@@ -151,6 +153,21 @@ services:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - aurix-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: aurix-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    depends_on:
+      - prometheus
     networks:
       - aurix-network
 

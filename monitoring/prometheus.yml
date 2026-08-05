@@ -1,4 +1,4 @@
-# AUREUS Core Banking - Configuração do Prometheus
+# Aurix Core Banking - Configuração do Prometheus
 
 global:
   scrape_interval: 15s
@@ -22,78 +22,113 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # AUREUS Gateway
-  - job_name: 'aurix-gateway'
-    metrics_path: '/actuator/prometheus'
+  # ═══════════════════════════════════════════════════════════════════════
+  # API Gateway (Traefik)
+  # ═══════════════════════════════════════════════════════════════════════
+  - job_name: 'svc-gateway'
+    metrics_path: '/metrics'
     static_configs:
-      - targets: ['host.docker.internal:8080']
+      - targets: ['traefik:8080']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Core
-  - job_name: 'aurix-core'
+  # ═══════════════════════════════════════════════════════════════════════
+  # Microservices (svc-*)
+  # ═══════════════════════════════════════════════════════════════════════
+  - job_name: 'svc-banking'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8081']
+      - targets: ['svc-banking:8200']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS PIX
-  - job_name: 'aurix-pix'
+  - job_name: 'svc-payments'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8082']
+      - targets: ['svc-payments:8201']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Credit
-  - job_name: 'aurix-credit'
+  - job_name: 'svc-credit'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8083']
+      - targets: ['svc-credit:8082']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Treasury
-  - job_name: 'aurix-treasury'
+  - job_name: 'svc-customer'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8084']
+      - targets: ['svc-customer:8083']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Compliance
-  - job_name: 'aurix-compliance'
+  - job_name: 'svc-products'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8086']
+      - targets: ['svc-products:8084']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Security
-  - job_name: 'aurix-security'
+  - job_name: 'svc-finance-mgmt'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8085']
+      - targets: ['svc-finance-mgmt:8089']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Analytics
-  - job_name: 'aurix-analytics'
+  - job_name: 'svc-intelligence'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8101']
+      - targets: ['svc-intelligence:8091']
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AUREUS Audit
-  - job_name: 'aurix-audit'
+  - job_name: 'svc-platform'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8088']
+      - targets: ['svc-platform:8092']
     scrape_interval: 10s
     scrape_timeout: 5s
 
+  - job_name: 'svc-cambio'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-cambio:8093']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'svc-cards'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-cards:8094']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'svc-compliance'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-compliance:8205']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'svc-ai'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-ai:8206']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'svc-fraud'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-fraud:8207']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Infraestrutura
+  # ═══════════════════════════════════════════════════════════════════════
   # PostgreSQL
   - job_name: 'postgres'
     static_configs:
@@ -150,28 +185,9 @@ scrape_configs:
     scrape_timeout: 10s
     scheme: http
 
-  # Data Pipeline Sync
-  - job_name: 'data-sync'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['data-sync:8080']
-    scrape_interval: 30s
-    scrape_timeout: 10s
-    scheme: http
-
-  # Real-time Analytics
-  - job_name: 'real-time-analytics'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['analytics:5000']
-    scrape_interval: 15s
-    scrape_timeout: 10s
-    scheme: http
-
   # Node Exporter (se disponível)
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 30s
     scrape_timeout: 10s
-
