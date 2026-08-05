@@ -28,7 +28,7 @@ sleep 90
 cd "$ROOT_DIR"
 echo ""
 echo "Executando testes E2E com pytest..."
-pytest -q tests/e2e
+pytest -q aurix-tests/e2e
 EXITCODE=$?
 
 echo ""

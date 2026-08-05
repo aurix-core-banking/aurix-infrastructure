@@ -1,73 +1,59 @@
 #!/bin/bash
 
+# AUREUS Core Banking - Ambiente de desenvolvimento (somente infraestrutura)
+# Sobe apenas PostgreSQL, Redis, Kafka e Keycloak via docker-compose.dev.yml
+# Os serviços svc-* devem ser iniciados pela IDE ou via docker-compose.v2.yml
+
 echo "============================================="
 echo "AUREUS CORE BANKING - AMBIENTE DE DESENVOLVIMENTO"
 echo "============================================="
 
 echo ""
-echo "Iniciando ambiente de desenvolvimento..."
+echo "Iniciando infraestrutura de desenvolvimento..."
 echo ""
 
 echo "1. Parando containers existentes..."
-docker-compose -f docker-compose.dev.yml down
+docker compose -f docker-compose.dev.yml down
 
 echo ""
 echo "2. Removendo volumes antigos (opcional)..."
 read -p "Deseja remover volumes antigos? (s/n): " choice
 if [[ $choice == "s" || $choice == "S" ]]; then
-    docker-compose -f docker-compose.dev.yml down -v
+    docker compose -f docker-compose.dev.yml down -v
     docker volume prune -f
 fi
 
 echo ""
-echo "3. Construindo imagens..."
-docker-compose -f docker-compose.dev.yml build --no-cache
+echo "3. Iniciando serviços de infraestrutura..."
+docker compose -f docker-compose.dev.yml up -d
 
 echo ""
-echo "4. Iniciando serviços..."
-docker-compose -f docker-compose.dev.yml up -d
+echo "4. Aguardando serviços iniciarem..."
+sleep 20
 
 echo ""
-echo "5. Aguardando serviços iniciarem..."
-sleep 30
-
-echo ""
-echo "6. Verificando status dos serviços..."
-docker-compose -f docker-compose.dev.yml ps
+echo "5. Verificando status dos serviços..."
+docker compose -f docker-compose.dev.yml ps
 
 echo ""
 echo "============================================="
-echo "AMBIENTE INICIADO COM SUCESSO!"
+echo "INFRAESTRUTURA INICIADA COM SUCESSO!"
 echo "============================================="
 echo ""
-echo "Serviços disponíveis:"
-echo "- AUREUS Gateway: http://localhost:8080"
-echo "- AUREUS Core: http://localhost:8081"
-echo "- AUREUS PIX: http://localhost:8082"
-echo "- AUREUS Credit: http://localhost:8083"
-echo "- AUREUS Treasury: http://localhost:8084"
-echo "- AUREUS Security: http://localhost:8085"
-echo "- AUREUS Compliance: http://localhost:8086"
-echo "- AUREUS Analytics: http://localhost:8101"
-echo "- AUREUS Audit: http://localhost:8088"
-echo "- AUREUS Organization: http://localhost:8100"
-echo "- Nginx Load Balancer: http://localhost:80"
+echo "Serviços de infraestrutura:"
+echo "- PostgreSQL: localhost:5432 (aurix_user / aurix_db)"
+echo "- Redis:      localhost:6379"
+echo "- Kafka:      localhost:9092"
+echo "- Keycloak:   http://localhost:8443/admin (admin / admin)"
 echo ""
-echo "Documentação API:"
-echo "- Swagger UI: http://localhost:8080/swagger-ui.html"
+echo "Para iniciar os serviços svc-* (backend):"
+echo "  docker compose -f docker-compose.v2.yml up -d --build"
 echo ""
-echo "Banco de Dados:"
-echo "- PostgreSQL: localhost:5432"
-echo "- Usuário: aurix"
-echo "- Senha: aurix123"
-echo "- Database: aurix_core_banking"
-echo ""
-echo "Cache:"
-echo "- Redis: localhost:6379"
+echo "Ou execute os serviços pela IDE (Spring Boot) usando esta infraestrutura."
 echo ""
 echo "Para parar o ambiente:"
-echo "docker-compose -f docker-compose.dev.yml down"
+echo "  docker compose -f docker-compose.dev.yml down"
 echo ""
 echo "Para ver logs:"
-echo "docker-compose -f docker-compose.dev.yml logs -f"
+echo "  docker compose -f docker-compose.dev.yml logs -f"
 echo ""

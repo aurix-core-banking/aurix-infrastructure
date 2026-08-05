@@ -3,9 +3,9 @@ set -e
 
 CONTAINER="${POSTGRES_CONTAINER:-aurix-postgres}"
 BACKUP_FILE="${1:?Uso: $0 <caminho-do-arquivo.sql> [database]}"
-DB="${2:-aurix}"
-PGUSER="${POSTGRES_USER:-aurix}"
-PGPASSWORD="${POSTGRES_PASSWORD:-aurix123}"
+DB="${2:-aurix_db}"
+PGUSER="${POSTGRES_USER:-aurix_user}"
+PGPASSWORD="${POSTGRES_PASSWORD:-aurix_dev_password}"
 
 if [ ! -f "$BACKUP_FILE" ]; then
   echo "Arquivo nao encontrado: $BACKUP_FILE"

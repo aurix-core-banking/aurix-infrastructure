@@ -1,12 +1,15 @@
 @echo off
-REM AUREUS Core Banking - Script de inicialização com IAM
-REM Este script inicia todos os serviços incluindo Keycloak IAM
+REM AUREUS Core Banking - Script de inicialização com IAM (Keycloak)
+REM Inicia a stack completa via docker-compose.v2.yml (que já inclui Keycloak)
+
+set SCRIPT_DIR=%~dp0
+set INFRA_DIR=%SCRIPT_DIR%..
 
 echo =============================================
 echo AUREUS Core Banking - Inicialização Completa
-echo =============================================
 echo Incluindo sistema IAM (Keycloak)
 echo =============================================
+echo.
 
 REM Verificar se Docker está rodando
 docker version >nul 2>&1
@@ -18,18 +21,22 @@ if %errorlevel% neq 0 (
 )
 
 echo Docker está rodando...
+echo.
+
+REM Validar arquivo da stack
+if not exist "%INFRA_DIR%\docker-compose.v2.yml" (
+    echo ERRO: docker-compose.v2.yml não encontrado em: %INFRA_DIR%
+    pause
+    exit /b 1
+)
 
 REM Parar containers existentes
 echo Parando containers existentes...
-docker-compose down
+docker compose -f "%INFRA_DIR%\docker-compose.v2.yml" down
 
-REM Remover volumes órfãos (opcional)
-echo Removendo volumes órfãos...
-docker volume prune -f
-
-REM Iniciar serviços
-echo Iniciando serviços do AUREUS...
-docker-compose up -d
+REM Iniciar stack completa (infra + serviços + Keycloak)
+echo Iniciando serviços do AUREUS (incluindo Keycloak)...
+docker compose -f "%INFRA_DIR%\docker-compose.v2.yml" up -d --build
 
 REM Aguardar serviços estarem prontos
 echo Aguardando serviços estarem prontos...
@@ -40,7 +47,7 @@ echo Verificando status dos serviços...
 
 REM PostgreSQL
 echo Verificando PostgreSQL...
-docker exec aurix-postgres pg_isready -U aurix -d aurix
+docker exec aurix-postgres pg_isready -U aurix_user -d aurix_db >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✓ PostgreSQL está rodando
 ) else (
@@ -49,7 +56,7 @@ if %errorlevel% equ 0 (
 
 REM Redis
 echo Verificando Redis...
-docker exec aurix-redis redis-cli ping
+docker exec aurix-redis redis-cli ping >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✓ Redis está rodando
 ) else (
@@ -58,29 +65,11 @@ if %errorlevel% equ 0 (
 
 REM Keycloak
 echo Verificando Keycloak...
-curl -f http://localhost:8080/health/ready >nul 2>&1
+curl -sf http://localhost:8443 >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✓ Keycloak está rodando
 ) else (
-    echo ✗ Keycloak não está respondendo
-)
-
-REM Prometheus
-echo Verificando Prometheus...
-curl -f http://localhost:9090/-/healthy >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✓ Prometheus está rodando
-) else (
-    echo ✗ Prometheus não está respondendo
-)
-
-REM Grafana
-echo Verificando Grafana...
-curl -f http://localhost:3000/api/health >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✓ Grafana está rodando
-) else (
-    echo ✗ Grafana não está respondendo
+    echo ✗ Keycloak ainda não está respondendo (pode levar mais tempo)
 )
 
 echo =============================================
@@ -89,63 +78,41 @@ echo =============================================
 echo URLs de acesso:
 echo.
 echo AUREUS Core Banking:
-echo - API Gateway: http://localhost:8080
-echo - AUREUS Core: http://localhost:8081
-echo - AUREUS PIX: http://localhost:8082
-echo - AUREUS Credit: http://localhost:8083
-echo - AUREUS Treasury: http://localhost:8084
-echo - AUREUS Security: http://localhost:8085
-echo - AUREUS Compliance: http://localhost:8086
-echo - AUREUS Analytics: http://localhost:8101
-echo - AUREUS Audit: http://localhost:8088
-echo - AUREUS Organization: http://localhost:8100
+echo - Gateway (aurix-gateway): http://localhost:8080
+echo - svc-banking:             http://localhost:8200
+echo - svc-payments (PIX):      http://localhost:8201
+echo - svc-credit:              http://localhost:8082
+echo - svc-customer:            http://localhost:8083
+echo - svc-products:            http://localhost:8084
+echo - svc-fraud:               http://localhost:8207
+echo - svc-compliance:          http://localhost:8205
+echo - svc-finance-mgmt:        http://localhost:8089
+echo - svc-platform:            http://localhost:8092
+echo - svc-intelligence:        http://localhost:8091
 echo.
 echo Sistema IAM (Keycloak):
-echo - Keycloak Admin: http://localhost:8080/admin
+echo - Keycloak Admin: http://localhost:8443/admin
 echo - Usuário: admin
-echo - Senha: admin123
+echo - Senha: admin
 echo - Realm: aurix
-echo.
-echo Monitoramento:
-echo - Prometheus: http://localhost:9090
-echo - Grafana: http://localhost:3000
-echo - Usuário: admin
-echo - Senha: admin123
 echo.
 echo Banco de Dados:
 echo - PostgreSQL: localhost:5432
-echo - Usuário: aurix
-echo - Senha: aurix123
-echo - Banco: aurix
+echo - Usuário: aurix_user
+echo - Banco: aurix_db
 echo.
 echo Cache:
 echo - Redis: localhost:6379
 echo.
-echo =============================================
-echo Configurando Keycloak...
-echo =============================================
-
-REM Aguardar Keycloak estar totalmente pronto
-echo Aguardando Keycloak estar totalmente pronto...
-timeout /t 60 /nobreak >nul
-
-REM Executar configuração do Keycloak
-echo Executando configuração do Keycloak...
-call iam\scripts\setup-keycloak.bat
-
-echo =============================================
-echo AUREUS Core Banking está pronto!
+echo Mensageria:
+echo - Kafka: localhost:9092
+echo.
 echo =============================================
 echo.
 echo Para parar os serviços:
-echo docker-compose down
+echo docker compose -f "%INFRA_DIR%\docker-compose.v2.yml" down
 echo.
 echo Para visualizar logs:
-echo docker-compose logs -f
+echo docker compose -f "%INFRA_DIR%\docker-compose.v2.yml" logs -f
 echo.
-echo Para acessar o banco de dados:
-echo docker exec -it aurix-postgres psql -U aurix -d aurix
-echo.
-echo =============================================
-
 pause

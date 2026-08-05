@@ -4,17 +4,18 @@ set -e
 CONTAINER="${POSTGRES_CONTAINER:-aurix-postgres}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
-PGUSER="${POSTGRES_USER:-aurix}"
-PGPASSWORD="${POSTGRES_PASSWORD:-aurix123}"
+PGUSER="${POSTGRES_USER:-aurix_user}"
+PGPASSWORD="${POSTGRES_PASSWORD:-aurix_dev_password}"
+AURIX_DB="${POSTGRES_DB:-aurix_db}"
 
 mkdir -p "$BACKUP_DIR"
 STAMP=$(date +%Y%m%d_%H%M%S)
 AUREUS_FILE="${BACKUP_DIR}/aurix_${STAMP}.sql"
 KEYCLOAK_FILE="${BACKUP_DIR}/keycloak_${STAMP}.sql"
 
-echo "Backup PostgreSQL: aurix e keycloak -> $BACKUP_DIR"
+echo "Backup PostgreSQL: ${AURIX_DB} e keycloak -> $BACKUP_DIR"
 export PGPASSWORD
-docker exec "$CONTAINER" pg_dump -U "$PGUSER" -d aurix --no-owner --no-acl -F p -f /tmp/aurix_dump.sql
+docker exec "$CONTAINER" pg_dump -U "$PGUSER" -d "$AURIX_DB" --no-owner --no-acl -F p -f /tmp/aurix_dump.sql
 docker cp "${CONTAINER}:/tmp/aurix_dump.sql" "$AUREUS_FILE"
 docker exec "$CONTAINER" rm -f /tmp/aurix_dump.sql
 

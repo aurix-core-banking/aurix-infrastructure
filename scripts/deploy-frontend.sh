@@ -3,6 +3,14 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+FRONTEND_DIR="$ROOT_DIR/aurix-frontend"
+ADMIN_DIR="$FRONTEND_DIR/aurix-admin"
+WEB_DIR="$FRONTEND_DIR/aurix-web"
+
+if [ ! -d "$ADMIN_DIR" ] || [ ! -d "$WEB_DIR" ]; then
+  echo "ERRO: estrutura de frontend não encontrada em $FRONTEND_DIR (esperado aurix-admin/ e aurix-web/)."
+  exit 1
+fi
 
 FRONTEND_API_URL="${FRONTEND_API_URL:-http://localhost:8080}"
 FRONTEND_S3_BUCKET_ADMIN="${FRONTEND_S3_BUCKET_ADMIN:-}"
@@ -32,11 +40,11 @@ fi
 if command -v aws &>/dev/null; then
   if [ -n "$FRONTEND_S3_BUCKET_ADMIN" ]; then
     echo "Uploading admin to s3://$FRONTEND_S3_BUCKET_ADMIN ..."
-    aws s3 sync "$ROOT_DIR/apps/frontend/aurix-admin/build" "s3://$FRONTEND_S3_BUCKET_ADMIN" --delete
+    aws s3 sync "$ADMIN_DIR/build" "s3://$FRONTEND_S3_BUCKET_ADMIN" --delete
   fi
   if [ -n "$FRONTEND_S3_BUCKET_WEB" ]; then
     echo "Uploading web to s3://$FRONTEND_S3_BUCKET_WEB ..."
-    aws s3 sync "$ROOT_DIR/apps/frontend/aurix-web/build" "s3://$FRONTEND_S3_BUCKET_WEB" --delete
+    aws s3 sync "$WEB_DIR/build" "s3://$FRONTEND_S3_BUCKET_WEB" --delete
   fi
   echo "Frontend upload complete."
 else
