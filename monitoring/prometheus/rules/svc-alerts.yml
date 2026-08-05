@@ -1,0 +1,89 @@
+# Alertas por serviço e métricas de negócio.
+#
+# As métricas de negócio assumem que cada serviço expõe contadores HTTP do
+# Micrometer/Prometheus (http_server_requests_seconds_count) com labels
+# uri/status. Ajuste a expressão conforme a exposição real de cada serviço.
+
+groups:
+  - name: svc-availability
+    rules:
+      - alert: SvcDown
+        expr: up{job=~"svc-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Serviço Aurix indisponível: {{ $labels.job }}"
+          description: "{{ $labels.job }} não responde às sondagens do Prometheus há mais de 2 minutos."
+          runbook_url: "https://github.com/aurix-core-banking/aurix-docs/blob/main/05-infrastructure/infrastructure/runbooks/runbook-queda-de-servico.md#r1"
+
+      - alert: SvcHighErrorRate
+        expr: |
+          sum by (job) (
+            rate(http_server_requests_seconds_count{status=~"5.."}[5m])
+          )
+          / clamp_min(
+              sum by (job) (rate(http_server_requests_seconds_count[5m])), 1e-9
+            ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alta taxa de erros 5xx no serviço {{ $labels.job }}"
+          description: "Taxa de erros 5xx acima de 5% das requisições por mais de 5 minutos."
+          runbook_url: "https://github.com/aurix-core-banking/aurix-docs/blob/main/05-infrastructure/infrastructure/runbooks/runbook-queda-de-servico.md#r2"
+
+      - alert: SvcHighLatency
+        expr: |
+          histogram_quantile(0.95, sum by (le, job) (
+            rate(http_server_requests_seconds_bucket[5m])
+          )) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latência alta no serviço {{ $labels.job }}"
+          description: "Latência P95 acima de 2s por mais de 5 minutos."
+          runbook_url: "https://github.com/aurix-core-banking/aurix-docs/blob/main/05-infrastructure/infrastructure/runbooks/runbook-lentidao-no-banco.md"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Métricas de negócio (recording rules)
+  # ═══════════════════════════════════════════════════════════════════════
+  - name: business-metrics
+    interval: 30s
+    rules:
+      # Transações por minuto (svc-banking)
+      - record: aurix:transacoes_por_minuto
+        expr: sum(rate(http_server_requests_seconds_count{job="svc-banking", uri=~"/api/transacoes.*"}[1m]))
+        labels:
+          dominio: transacoes
+
+      # PIX por hora (svc-payments)
+      - record: aurix:pix_por_hora
+        expr: sum(rate(http_server_requests_seconds_count{job="svc-payments", uri=~"/api/pix/.*"}[1m])) * 60
+        labels:
+          dominio: pix
+
+      # Transferências TED por hora (svc-cambio)
+      - record: aurix:ted_por_hora
+        expr: sum(rate(http_server_requests_seconds_count{job="svc-cambio", uri=~"/api/cambio/spi-str/str/ted.*"}[1m])) * 60
+        labels:
+          dominio: ted
+
+      # Cadastros de onboarding por hora (svc-customer)
+      - record: aurix:onboarding_por_hora
+        expr: sum(rate(http_server_requests_seconds_count{job="svc-customer", uri=~"/api/onboarding.*"}[1m])) * 60
+        labels:
+          dominio: onboarding
+
+      # Solicitações de crédito por hora (svc-credit)
+      - record: aurix:credito_por_hora
+        expr: sum(rate(http_server_requests_seconds_count{job="svc-credit", uri=~"/api/credit/.*"}[1m])) * 60
+        labels:
+          dominio: credito
+
+      # Alertas de fraude por hora (svc-fraud)
+      - record: aurix:fraudes_por_hora
+        expr: sum(rate(http_server_requests_seconds_count{job="svc-fraud", uri=~"/api/fraud/.*"}[1m])) * 60
+        labels:
+          dominio: fraude

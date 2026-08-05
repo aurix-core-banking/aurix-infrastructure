@@ -2,49 +2,50 @@ groups:
   - name: sla-uptime
     interval: 60s
     rules:
+      # Serviços críticos considerados no SLA (gateway + core bancário)
       - record: aurix:up:count
-        expr: count(up{job=~"aurix-gateway|aurix-core|aurix-pix"} == 1)
+        expr: count(up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"} == 1)
         labels:
           tier: critical
       - record: aurix:up:total
-        expr: count(up{job=~"aurix-gateway|aurix-core|aurix-pix"})
+        expr: count(up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"})
         labels:
           tier: critical
       - record: aurix:availability_ratio:5m
         expr: |
-          sum(up{job=~"aurix-gateway|aurix-core|aurix-pix"}) or vector(0)
+          sum(up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"}) or vector(0)
           /
-          count(up{job=~"aurix-gateway|aurix-core|aurix-pix"}) or vector(1)
+          count(up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"}) or vector(1)
         labels:
           sla_window: 5m
 
   - name: sla-alerts
     rules:
       - alert: AurixCriticalServiceDown
-        expr: up{job=~"aurix-gateway|aurix-core|aurix-pix"} == 0
+        expr: up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"} == 0
         for: 2m
         labels:
           severity: critical
           item: "14.4"
         annotations:
-          summary: "Servico critico AUREUS indisponivel"
-          description: "{{ $labels.job }} esta down ha mais de 2 minutos. Impacto no SLA 99.9%."
-          runbook_url: "docs/05-infrastructure/infrastructure/aurix-cloud-runbook.md#r1"
+          summary: "Serviço crítico Aurix indisponível"
+          description: "{{ $labels.job }} está down há mais de 2 minutos. Impacto no SLA 99.9%."
+          runbook_url: "https://github.com/aurix-core-banking/aurix-docs/blob/main/05-infrastructure/infrastructure/runbooks/runbook-queda-de-servico.md#r1"
 
       - alert: AurixSLAAtRisk
         expr: |
           (
-            sum(up{job=~"aurix-gateway|aurix-core|aurix-pix"}) or vector(0)
-            / count(up{job=~"aurix-gateway|aurix-core|aurix-pix"})
+            sum(up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"}) or vector(0)
+            / count(up{job=~"svc-gateway|svc-banking|svc-payments|svc-credit|svc-customer"})
           ) < 1
         for: 5m
         labels:
           severity: critical
           item: "14.4"
         annotations:
-          summary: "SLA em risco: um ou mais servicos criticos indisponiveis"
-          description: "Disponibilidade dos servicos criticos (gateway, core, pix) abaixo de 100% por 5m."
-          runbook_url: "docs/05-infrastructure/infrastructure/aurix-cloud-runbook.md#r1"
+          summary: "SLA em risco: um ou mais serviços críticos indisponíveis"
+          description: "Disponibilidade dos serviços críticos (gateway, banking, payments, credit, customer) abaixo de 100% por 5m."
+          runbook_url: "https://github.com/aurix-core-banking/aurix-docs/blob/main/05-infrastructure/infrastructure/runbooks/runbook-queda-de-servico.md#r1"
 
       - alert: PostgreSQLDown
         expr: up{job="postgres"} == 0
@@ -53,6 +54,6 @@ groups:
           severity: critical
           item: "14.4"
         annotations:
-          summary: "PostgreSQL indisponivel"
-          description: "Banco de dados principal nao responde. Verificar R3 no runbook."
-          runbook_url: "docs/05-infrastructure/infrastructure/aurix-cloud-runbook.md#r3"
+          summary: "PostgreSQL indisponível"
+          description: "Banco de dados principal não responde. Verificar R3 no runbook."
+          runbook_url: "https://github.com/aurix-core-banking/aurix-docs/blob/main/05-infrastructure/infrastructure/runbooks/runbook-queda-de-servico.md#r3"

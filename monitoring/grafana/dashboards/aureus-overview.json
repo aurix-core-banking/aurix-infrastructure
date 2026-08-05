@@ -12,7 +12,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=~\"aurix-.*\"}",
+            "expr": "up{job=~\"svc-.*\"}",
             "refId": "A"
           }
         ],
