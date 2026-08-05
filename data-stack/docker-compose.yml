@@ -29,6 +29,11 @@ services:
       -c max_connections=200
       -c log_statement=all
       -c log_min_duration_statement=1000
+      -c wal_level=logical
+      -c max_replication_slots=10
+      -c max_wal_senders=10
+      -c max_slot_wal_keep_size=1GB
+      -c wal_keep_size=512MB
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aurix_user -d aurix"]
       interval: 30s
@@ -244,6 +249,37 @@ services:
     networks:
       - aurix-network
 
+  debezium-connect:
+    image: debezium/connect:2.7
+    container_name: aurix-debezium-connect
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: aurix-debezium
+      CONFIG_STORAGE_TOPIC: aurix_connect_configs
+      OFFSET_STORAGE_TOPIC: aurix_connect_offsets
+      STATUS_STORAGE_TOPIC: aurix_connect_statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/connectors || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - aurix-network
+
   iceberg-rest:
     image: ghcr.io/tabulario/iceberg-rest:latest
     container_name: aurix-iceberg-rest
@@ -318,13 +354,14 @@ services:
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
-      _PIP_ADDITIONAL_PACKAGES: "apache-airflow-providers-postgres apache-airflow-providers-apache-kafka minio boto3 pandas pyarrow dbt-postgres"
+      _PIP_ADDITIONAL_PACKAGES: "apache-airflow-providers-postgres apache-airflow-providers-apache-kafka minio boto3 pandas pyarrow confluent-kafka dbt-postgres"
     user: "50000:0"
     ports:
       - "8082:8080"
     volumes:
       - ../../data-pipelines/airflow/dags:/opt/airflow/dags
       - ../../data-pipelines/dbt:/opt/airflow/dbt
+      - ../../data-pipelines/ingestion:/opt/airflow/ingestion
     command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
@@ -343,11 +380,12 @@ services:
     environment:
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      _PIP_ADDITIONAL_PACKAGES: "apache-airflow-providers-postgres apache-airflow-providers-apache-kafka minio boto3 pandas pyarrow dbt-postgres"
+      _PIP_ADDITIONAL_PACKAGES: "apache-airflow-providers-postgres apache-airflow-providers-apache-kafka minio boto3 pandas pyarrow confluent-kafka dbt-postgres"
     user: "50000:0"
     volumes:
       - ../../data-pipelines/airflow/dags:/opt/airflow/dags
       - ../../data-pipelines/dbt:/opt/airflow/dbt
+      - ../../data-pipelines/ingestion:/opt/airflow/ingestion
     command: scheduler
     networks:
       - aurix-network
