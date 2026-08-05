@@ -1,0 +1,29 @@
+# Alertas de reconciliação contábil (core banking vs data lake).
+#
+# Métricas expostas pelo exporter de reconciliação do aurix-data-pipelines
+# (aurix_reconciliacao_*).
+
+groups:
+  - name: reconciliacao
+    rules:
+      - alert: ReconciliacaoDivergencias
+        expr: aurix_reconciliacao_divergencias_total > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: data-pipelines
+          component: reconciliacao
+        annotations:
+          summary: "Divergência na reconciliação contábil"
+          description: "A reconciliação core banking vs data lake detectou divergências acima do limiar (escopo {{ $labels.escopo }})"
+
+      - alert: ReconciliacaoAusente
+        expr: time() - aurix_reconciliacao_ultima_execucao > 86400
+        for: 30m
+        labels:
+          severity: warning
+          service: data-pipelines
+          component: reconciliacao
+        annotations:
+          summary: "Reconciliação contábil não executou nas últimas 24h"
+          description: "A DAG reconciliacao_contabil não produziu relatório nas últimas 24 horas"
