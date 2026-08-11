@@ -39,7 +39,7 @@ services:
     networks:
       - aurix-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aurix -d aurix"]
+      test: ["CMD-SHELL", "pg_isready -U aurix_user -d aurix_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -691,7 +691,7 @@ services:
     networks:
       - aurix-network
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8206/actuator/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8206/api/ai/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5

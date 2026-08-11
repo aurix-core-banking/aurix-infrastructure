@@ -70,6 +70,13 @@ scrape_configs:
     scrape_interval: 10s
     scrape_timeout: 5s
 
+  - job_name: 'svc-contracts'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-contracts:8085']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
   - job_name: 'svc-finance-mgmt'
     metrics_path: '/actuator/prometheus'
     static_configs:
@@ -113,7 +120,7 @@ scrape_configs:
     scrape_timeout: 5s
 
   - job_name: 'svc-ai'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/api/ai/actuator/prometheus'
     static_configs:
       - targets: ['svc-ai:8206']
     scrape_interval: 10s
