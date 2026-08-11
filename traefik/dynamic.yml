@@ -134,6 +134,26 @@ http:
       entrypoints:
         - web
 
+    # ── svc-products (8084) ──
+    products:
+      rule: "PathPrefix(`/api/products`)"
+      service: svc-products
+      middlewares:
+        - ratelimit-default
+        - cors-headers
+      entrypoints:
+        - web
+
+    # ── svc-contracts (8085) ──
+    contracts:
+      rule: "PathPrefix(`/api/contracts`)"
+      service: svc-contracts
+      middlewares:
+        - ratelimit-default
+        - cors-headers
+      entrypoints:
+        - web
+
     # ── svc-finance-mgmt (8089) ──
     finance-mgmt:
       rule: "PathPrefix(`/api/finance`)"
@@ -283,10 +303,26 @@ http:
           path: /actuator/health
           interval: 30s
 
+    svc-products:
+      loadBalancer:
+        servers:
+          - url: "http://svc-products:8084"
+        healthCheck:
+          path: /actuator/health
+          interval: 30s
+
+    svc-contracts:
+      loadBalancer:
+        servers:
+          - url: "http://svc-contracts:8085"
+        healthCheck:
+          path: /actuator/health
+          interval: 30s
+
     svc-ai:
       loadBalancer:
         servers:
           - url: "http://svc-ai:8206"
         healthCheck:
-          path: /actuator/health
+          path: /api/ai/actuator/health
           interval: 30s
