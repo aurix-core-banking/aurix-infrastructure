@@ -276,6 +276,63 @@ services:
       - aurix-network
 
   # ═══════════════════════════════════════════════════════════════════════
+  # VAULT — Secrets Management
+  # ═══════════════════════════════════════════════════════════════════════
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: aurix-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: http://localhost:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/data
+      - ./vault/config.hcl:/vault/config/config.hcl:ro
+    command: server -config=/vault/config/config.hcl
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "vault", "status", "-format=json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # PGBOUNCER — Connection Pooling
+  # ═══════════════════════════════════════════════════════════════════════
+  pgbouncer:
+    image: edoburu/pgbouncer:1.21.0
+    container_name: aurix-pgbouncer
+    ports:
+      - "6432:6432"
+    environment:
+      DATABASE_URL: postgresql://aurix_user:aurix_dev_password@postgres:5432/aurix_db
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 50
+      MIN_POOL_SIZE: 10
+      RESERVE_POOL_SIZE: 10
+      RESERVE_POOL_TIMEOUT: 3
+      SERVER_IDLE_TIMEOUT: 600
+      CLIENT_IDLE_TIMEOUT: 0
+      SERVERLifetime: 3600
+      LOG_CONNECTIONS: 1
+      LOG_DISCONNECTIONS: 1
+      ADMIN_USERS: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U aurix_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════════════
   # TEMPORAL — Workflow Orchestration
   # ═══════════════════════════════════════════════════════════════════════
   temporal-postgres:
@@ -848,6 +905,7 @@ volumes:
   clickhouse_data:
   timescaledb_data:
   temporal_postgres_data:
+  vault_data:
 
 networks:
   aurix-network:
