@@ -1,0 +1,3 @@
+{{/*
+  Istio Security — AuthorizationPolicy + RequestAuthentication
+*/}}

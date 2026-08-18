@@ -1,0 +1,285 @@
+# ============================================================
+# Istio AuthorizationPolicy — Controle granular de acesso
+# Apenas serviços autorizados podem se comunicar
+# ============================================================
+
+# ──────────────────────────────────────────────────────────────
+# DEFAULT: Deny all inter-service traffic (zero trust)
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: aurix-platform
+spec:
+  {}  # Deny all by default — cada serviço precisa de policy explícita
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-BANKING — Core bancário (contas, transações)
+# Aceita de: svc-payments, svc-credit, svc-customer, svc-cards,
+#            svc-cambio, svc-contracts, svc-platform, svc-gateway
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-banking
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-banking
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/svc-payments
+        - cluster.local/ns/aurix-platform/sa/svc-credit
+        - cluster.local/ns/aurix-platform/sa/svc-customer
+        - cluster.local/ns/aurix-platform/sa/svc-cards
+        - cluster.local/ns/aurix-platform/sa/svc-cambio
+        - cluster.local/ns/aurix-platform/sa/svc-contracts
+        - cluster.local/ns/aurix-platform/sa/svc-platform
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+        - cluster.local/ns/aurix-platform/sa/svc-openfinance
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "PATCH"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-PAYMENTS — Processamento PIX
+# Aceita de: svc-banking, svc-gateway, svc-fraud
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-payments
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-payments
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/svc-banking
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+        - cluster.local/ns/aurix-platform/sa/svc-fraud
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-CREDIT — Crédito, empréstimos
+# Aceita de: svc-banking, svc-gateway, svc-customer
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-credit
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-credit
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/svc-banking
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+        - cluster.local/ns/aurix-platform/sa/svc-customer
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-CUSTOMER — Onboarding, KYC
+# Aceita de: svc-banking, svc-gateway, svc-fraud, svc-compliance
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-customer
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-customer
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/svc-banking
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+        - cluster.local/ns/aurix-platform/sa/svc-fraud
+        - cluster.local/ns/aurix-platform/sa/svc-compliance
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "PATCH"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-OPENFINANCE — APIs Open Finance Brasil
+# Aceita de: gateway (banco receptor via REST), svc-banking (events)
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-openfinance
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-openfinance
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/open-finance/**", "/health", "/actuator/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-FRAUD — Detecção de fraude (Kafka only)
+# Aceita de: svc-banking (via Kafka, não REST)
+# NÃO expõe APIs REST em prod
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-rest-to-svc-fraud
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-fraud
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/**"]
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/aurix-platform/sa/svc-banking
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-CARDS — Cartões de crédito
+# Aceita de: svc-banking, svc-gateway, svc-customer
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-cards
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-cards
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/svc-banking
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+        - cluster.local/ns/aurix-platform/sa/svc-customer
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-CAMBIO — Câmbio, SPI/STR
+# Aceita de: svc-banking, svc-gateway
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-cambio
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-cambio
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/svc-banking
+        - cluster.local/ns/aurix-platform/sa/aurix-gateway
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# SVC-PLATFORM — Webhooks, notificações, audit
+# Aceita de: todos os serviços (hub central)
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-svc-platform
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-platform
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/aurix-platform/sa/*
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/**"]
+
+---
+# ──────────────────────────────────────────────────────────────
+# GATEWAY — API Gateway (Traefik)
+# Aceita de: internet (ingress) + todos os pods internos
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-to-gateway
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: aurix-gateway
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["istio-system"]  # Ingress gateway
+    - source:
+        principals: ["cluster.local/ns/aurix-platform/sa/*"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]

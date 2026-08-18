@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: default-traffic-policy
+  namespace: {{ .Values.namespace }}
+spec:
+  host: "*.{{ .Values.namespace }}.svc.cluster.local"
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: {{ .Values.retry.maxConnections }}
+      http:
+        h2UpgradePolicy: DEFAULT
+        http1MaxPendingRequests: {{ .Values.retry.http2MaxRequests }}
+        http2MaxRequests: {{ .Values.retry.http2MaxRequests }}
+        maxRequestsPerConnection: 100
+        maxRetries: {{ .Values.retry.maxRetries }}
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50

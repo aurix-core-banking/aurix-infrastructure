@@ -1,0 +1,156 @@
+# ============================================================
+# Istio RequestAuthentication — Validação JWT no mesh level
+# Valida tokens Keycloak/FAPI antes de chegar no app
+# ============================================================
+
+# ──────────────────────────────────────────────────────────────
+# GLOBAL — Valida JWT do Keycloak em todos os serviços
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: keycloak-jwt-global
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: aurix-platform
+  jwtRules:
+  - issuer: "https://keycloak.aurix.com.br/realms/aurix"
+    jwksUri: "https://keycloak.aurix.com.br/realms/aurix/protocol/openid-connect/certs"
+    forwardOriginalToken: true
+    outputPayloadToHeader: x-jwt-payload
+    fromHeaders:
+    - name: Authorization
+      prefix: "Bearer "
+    outputClaimToHeaders:
+    - header: x-jwt-sub
+      claim: sub
+    - header: x-jwt-email
+      claim: email
+    - header: x-jwt-roles
+      claim: realm_access.roles
+
+---
+# ──────────────────────────────────────────────────────────────
+# OPEN FINANCE — Validação FAPI-Brazil (consumer_key)
+# Aceita tanto JWT Bearer quanto API key de parceiros
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: openfinance-fapi-auth
+  namespace: aurix-platform
+spec:
+  selector:
+    matchLabels:
+      app: svc-openfinance
+  jwtRules:
+  - issuer: "https://auth.openfinancebrasil.org.br/oauth/authorize"
+    jwksUri: "https://auth.openfinancebrasil.org.br/.well-known/jwks.json"
+    forwardOriginalToken: true
+    outputClaimToHeaders:
+    - header: x-fapi-sub
+      claim: sub
+    - header: x-fapi-iss
+      claim: iss
+
+---
+# ──────────────────────────────────────────────────────────────
+# BACEN mTLS — PeerAuthentication para SPI/STR
+# ──────────────────────────────────────────────────────────────
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: mtls-strict-global
+  namespace: aurix-platform
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# ──────────────────────────────────────────────────────────────
+# Retries e timeouts no mesh
+# ──────────────────────────────────────────────────────────────
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: default-retry-policy
+  namespace: aurix-platform
+spec:
+  host: "*.aurix-platform.svc.cluster.local"
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+      http:
+        h2UpgradePolicy: DEFAULT
+        http1MaxPendingRequests: 1024
+        http2MaxRequests: 1024
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+
+---
+# ──────────────────────────────────────────────────────────────
+# Retry policy por serviço crítico
+# ──────────────────────────────────────────────────────────────
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: svc-banking-retry
+  namespace: aurix-platform
+spec:
+  hosts:
+  - svc-banking
+  http:
+  - route:
+    - destination:
+        host: svc-banking
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: "5xx,reset,connect-failure"
+    timeout: 10s
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: svc-payments-retry
+  namespace: aurix-platform
+spec:
+  hosts:
+  - svc-payments
+  http:
+  - route:
+    - destination:
+        host: svc-payments
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: "5xx,reset,connect-failure"
+    timeout: 10s
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: svc-credit-retry
+  namespace: aurix-platform
+spec:
+  hosts:
+  - svc-credit
+  http:
+  - route:
+    - destination:
+        host: svc-credit
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
+      retryOn: "5xx,reset,connect-failure"
+    timeout: 15s

@@ -39,7 +39,8 @@
 
 # vault kv put aurix/kafka \
 #   sasl-username=aurix \
-#   sasl-password=<FORTISSEN>
+#   sasl-password=<FORTISSEN> \
+#   ssl-truststore-password=<FORTISSEN>
 
 # vault kv put aurix/keycloak \
 #   admin-password=<FORTISSEN>

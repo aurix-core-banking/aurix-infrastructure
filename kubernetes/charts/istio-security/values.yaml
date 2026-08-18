@@ -1,0 +1,16 @@
+namespace: aurix-platform
+
+# Global request authentication
+jwt:
+  issuer: "https://keycloak.aurix.com.br/realms/aurix"
+  jwksUri: "https://keycloak.aurix.com.br/realms/aurix/protocol/openid-connect/certs"
+
+# Retry/timeout policies
+retry:
+  attempts: 3
+  perTryTimeout: 2s
+  retryOn: "5xx,reset,connect-failure"
+  timeout: 10s
+  maxConnections: 1000
+  http2MaxRequests: 1024
+  maxRetries: 3
