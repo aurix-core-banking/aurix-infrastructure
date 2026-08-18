@@ -733,6 +733,36 @@ services:
       retries: 5
       start_period: 60s
 
+  # svc-openfinance (8096) — Open Finance Brasil (BACEN)
+  svc-openfinance:
+    build:
+      context: ../openfinance
+      dockerfile: Dockerfile
+    container_name: svc-openfinance
+    ports:
+      - "8096:8096"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: "8096"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aurix_db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-aurix_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AURIX_BACEN_URL: http://bacen-mock:8095
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8096/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 # ═══════════════════════════════════════════════════════════════════════
 # VOLUMES & NETWORKS
 # ═══════════════════════════════════════════════════════════════════════

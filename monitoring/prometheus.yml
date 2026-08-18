@@ -133,6 +133,13 @@ scrape_configs:
     scrape_interval: 10s
     scrape_timeout: 5s
 
+  - job_name: 'svc-openfinance'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['svc-openfinance:8096']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
   # ═══════════════════════════════════════════════════════════════════════
   # Infraestrutura
   # ═══════════════════════════════════════════════════════════════════════

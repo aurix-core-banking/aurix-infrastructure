@@ -176,8 +176,18 @@ http:
 
     # ── svc-platform (8092) ──
     platform:
-      rule: "PathPrefix(`/api/platform`) || PathPrefix(`/api/openfinance`) || PathPrefix(`/api/webhooks`) || PathPrefix(`/api/notificacoes`)"
+      rule: "PathPrefix(`/api/platform`) || PathPrefix(`/api/webhooks`) || PathPrefix(`/api/notificacoes`)"
       service: svc-platform
+      middlewares:
+        - ratelimit-default
+        - cors-headers
+      entrypoints:
+        - web
+
+    # ── svc-openfinance (8096) — Open Finance Brasil ──
+    openfinance:
+      rule: "PathPrefix(`/open-finance`)"
+      service: svc-openfinance
       middlewares:
         - ratelimit-default
         - cors-headers
@@ -315,6 +325,14 @@ http:
       loadBalancer:
         servers:
           - url: "http://svc-contracts:8085"
+        healthCheck:
+          path: /actuator/health
+          interval: 30s
+
+    svc-openfinance:
+      loadBalancer:
+        servers:
+          - url: "http://svc-openfinance:8096"
         healthCheck:
           path: /actuator/health
           interval: 30s
