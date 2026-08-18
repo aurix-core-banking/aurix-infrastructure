@@ -206,6 +206,7 @@ services:
       KC_HTTP_ENABLED: true
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev}
+      KEYCLOAK_IMPORT: /opt/keycloak/data/import/aureus-realm.json
       KC_LOG_LEVEL: INFO
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
@@ -216,7 +217,8 @@ services:
         condition: service_healthy
     volumes:
       - keycloak_data:/opt/keycloak/data
-    command: start-dev
+      - ./iam/keycloak/import:/opt/keycloak/data/import:ro
+    command: start-dev --import-realm
     networks:
       - aurix-network
 
