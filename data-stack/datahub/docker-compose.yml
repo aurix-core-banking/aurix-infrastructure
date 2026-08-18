@@ -1,0 +1,96 @@
+# ============================================================
+# DataHub — Data Governance Platform
+# Catálogo de dados, glossário, classificação PII, lineage
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ─── DataHub Frontend (UI) ────────────────────────────────
+  datahub-frontend:
+    image: linkedin/datahub-frontend:latest
+    container_name: aurix-datahub-frontend
+    ports:
+      - "9002:9000"
+    environment:
+      DATAHUB_APP_HOST: "0.0.0.0"
+      DATAHUB_APP_PORT: "9000"
+      DATAHUB_GMS_HOST: datahub-gms
+      DATAHUB_GMS_PORT: "8080"
+      DATAHUB_SECRET: "aurix-datahub-secret-change-me"
+    depends_on:
+      - datahub-gms
+    networks:
+      - aurix-network
+
+  # ─── DataHub GMS (Metadata Service) ───────────────────────
+  datahub-gms:
+    image: linkedin/datahub-gms:latest
+    container_name: aurix-datahub-gms
+    ports:
+      - "8080:8080"
+    environment:
+      # PostgreSQL for metadata
+      DATAHUB_STORAGE_DRIVER_ELASTICSEARCH_HOST: elasticsearch
+      DATAHUB_STORAGE_DRIVER_ELASTICSEARCH_PORT: 9200
+      DATAHUB_STORAGE_DRIVER_ELASTICSEARCH_INDEX_BUILDER_SETTINGS_REINDEX_INDEXES: "true"
+      # Kafka for events
+      DATAHUB_STREAMING_KAFKA_BOOTSTRAP_SERVER: "kafka:9092"
+      DATAHUB_KAFKA_TOPIC_BASE: "DataHubEvent"
+      # Auth
+      DATAHUB_AUTHENTICATOR_TYPE: "jvm-consumer"
+      DATAHUB_APP_PORT: "8080"
+      # PostgreSQL (analytics DB)
+      DATAHUB_STORAGE_DRIVER_POSTGRESQL_HOST: "postgres"
+      DATAHUB_STORAGE_DRIVER_POSTGRESQL_PORT: "5432"
+      DATAHUB_STORAGE_DRIVER_POSTGRESQL_USERNAME: "aurix"
+      DATAHUB_STORAGE_DRIVER_POSTGRESQL_PASSWORD: "${POSTGRES_PASSWORD:-aurix}"
+      DATAHUB_STORAGE_DRIVER_POSTGRESQL_DATABASE: "datahub_metadata"
+    depends_on:
+      - elasticsearch
+      - kafka
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── DataHub Actions (automated governance) ────────────────
+  datahub-actions:
+    image: linkedin/datahub-actions:latest
+    container_name: aurix-datahub-actions
+    environment:
+      DATAHUB_GMS_HOST: datahub-gms
+      DATAHUB_GMS_PORT: "8080"
+      DATAHUB_SECRETS_PATH: "/etc/datahub/secrets"
+      KAFKA_BOOTSTRAP_SERVER: "kafka:9092"
+    depends_on:
+      - datahub-gms
+    networks:
+      - aurix-network
+
+  # ─── DataHub Init (bootstrap) ─────────────────────────────
+  datahub-init:
+    image: linkedin/datahub-frontend:latest
+    container_name: aurix-datahub-init
+    environment:
+      DATAHUB_GMS_HOST: datahub-gms
+      DATAHUB_GMS_PORT: "8080"
+      DATAHUB_SECRET: "aurix-datahub-secret-change-me"
+    command: >
+      /bin/sh -c "
+      sleep 30 &&
+      datahub docker init -a http://datahub-gms:8080
+      "
+    depends_on:
+      - datahub-gms
+    networks:
+      - aurix-network
+    profiles:
+      - init
+
+networks:
+  aurix-network:
+    external: true

@@ -1,0 +1,74 @@
+# ============================================================
+# Feast Feature Store — Docker Compose
+# Feature server + online store para serving ML features
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ─── Feast Feature Server ─────────────────────────────────
+  feast-server:
+    image: feastdev/feature-server:latest
+    container_name: aurix-feast-server
+    ports:
+      - "6566:6566"
+    environment:
+      FEAST_CONFIG_PATH: /opt/feast/feature_store.yaml
+      FEAST_PROJECT_NAME: aurix
+      # PostgreSQL (offline store)
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: aurix
+      POSTGRES_USER: aurix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aurix}
+    volumes:
+      - ../feature-store:/opt/feast:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:6566/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Feast UI ─────────────────────────────────────────────
+  feast-ui:
+    image: feastdev/feature-server:latest
+    container_name: aurix-feast-ui
+    ports:
+      - "6567:6566"
+    command: ["feast", "ui", "-h", "0.0.0.0", "-p", "6566"]
+    volumes:
+      - ../feature-store:/opt/feast:ro
+    depends_on:
+      - feast-server
+    networks:
+      - aurix-network
+    profiles:
+      - ui
+
+  # ─── Feature Materialization Job (Airflow) ────────────────
+  feast-materialize:
+    image: feastdev/feature-server:latest
+    container_name: aurix-feast-materialize
+    environment:
+      FEAST_CONFIG_PATH: /opt/feast/feature_store.yaml
+    volumes:
+      - ../feature-store:/opt/feast:ro
+    command: >
+      /bin/sh -c "
+      feast materialize-incremental \$(date -u +\%Y-\%m-\dT\%H:\%M:\%SZ)
+      "
+    depends_on:
+      - feast-server
+    networks:
+      - aurix-network
+    profiles:
+      - materialize
+
+networks:
+  aurix-network:
+    external: true

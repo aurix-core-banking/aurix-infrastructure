@@ -1,0 +1,94 @@
+# ============================================================
+# OpenLineage + Marquez — Data Lineage Infrastructure
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ─── Marquez (Lineage Backend) ────────────────────────────
+  marquez:
+    image: marquezproject/marquez:latest
+    container_name: aurix-marquez
+    ports:
+      - "5000:5000"
+    environment:
+      MARQUEZ_PORT: 5000
+      # PostgreSQL for metadata
+      MARQUEZ_DB_HOST: postgres
+      MARQUEZ_DB_PORT: 5432
+      MARQUEZ_DB_NAME: marquez
+      MARQUEZ_DB_USER: aurix
+      MARQUEZ_DB_PASSWORD: ${POSTGRES_PASSWORD:-aurix}
+      # Logging
+      MARQUEZ_LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Marquez Web UI ──────────────────────────────────────
+  marquez-web:
+    image: marquezproject/marquez-web:latest
+    container_name: aurix-marquez-web
+    ports:
+      - "5001:3000"
+    environment:
+      MARQUEZ_HOST: marquez
+      MARQUEZ_PORT: "5000"
+    depends_on:
+      - marquez
+    networks:
+      - aurix-network
+
+  # ─── OpenLineage Airflow Integration ─────────────────────
+  openlineage-airflow:
+    image: openlineage/airflow-integration:latest
+    container_name: aurix-openlineage-airflow
+    environment:
+      OPENLINEAGE_URL: "http://marquez:5000"
+      OPENLINEAGE_API_KEY: ""
+      OPENLINEAGE_NAMESPACE: "aurix-platform"
+      # Configuração de coleta
+      OPENLINEAGE_COLLECTOR_TYPE: "airflow"
+      OPENLINEAGE_DAGS_PATH: "/opt/airflow/dags"
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags:ro
+    depends_on:
+      - marquez
+    networks:
+      - aurix-network
+    profiles:
+      - lineage
+
+  # ─── PostgreSQL init para Marquez ────────────────────────
+  postgres-marquez-init:
+    image: postgres:15-alpine
+    container_name: aurix-postgres-marquez-init
+    environment:
+      POSTGRES_DB: marquez
+      POSTGRES_USER: aurix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aurix}
+    command: >
+      /bin/sh -c "
+      until pg_isready -h postgres -p 5432; do sleep 1; done &&
+      psql -h postgres -U aurix -d postgres -c 'CREATE DATABASE marquez;' 2>/dev/null || true &&
+      psql -h postgres -U aurix -d postgres -c 'GRANT ALL PRIVILEGES ON DATABASE marquez TO aurix;' 2>/dev/null || true &&
+      echo 'Marquez database ready'
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aurix-network
+    profiles:
+      - init
+
+networks:
+  aurix-network:
+    external: true
