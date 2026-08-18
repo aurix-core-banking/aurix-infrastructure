@@ -276,6 +276,68 @@ services:
       - aurix-network
 
   # ═══════════════════════════════════════════════════════════════════════
+  # TEMPORAL — Workflow Orchestration
+  # ═══════════════════════════════════════════════════════════════════════
+  temporal-postgres:
+    image: postgres:15-alpine
+    container_name: aurix-temporal-postgres
+    environment:
+      POSTGRES_DB: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: ${TEMPORAL_DB_PASSWORD:-temporal_dev_password}
+    ports:
+      - "5434:5432"
+    volumes:
+      - temporal_postgres_data:/var/lib/postgresql/data
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  temporal:
+    image: temporalio/auto-setup:1.26.0
+    container_name: aurix-temporal
+    depends_on:
+      temporal-postgres:
+        condition: service_healthy
+    ports:
+      - "7233:7233"
+      - "8088:8088"
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      DB_HOST: temporal-postgres
+      DB_USER: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD:-temporal_dev_password}
+      TEMPORAL_ADDRESS: localhost:7233
+      TEMPORAL_NAMESPACE: aurix
+      TEMPORAL_CYCLE_MINUTES: 10
+    networks:
+      - aurix-network
+    healthcheck:
+      test: ["CMD-SHELL", "temporal operator namespace describe default || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  temporal-ui:
+    image: temporalio/ui:2.26.0
+    container_name: aurix-temporal-ui
+    depends_on:
+      - temporal
+    ports:
+      - "8098:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    networks:
+      - aurix-network
+
+  # ═══════════════════════════════════════════════════════════════════════
   # AUREUS SERVICES — 13 svc-* modules
   # Build context: ../backend (resolves parent POM + aurix-shared)
   # ═══════════════════════════════════════════════════════════════════════
@@ -366,12 +428,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_REDIS_HOST: redis
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: aurix
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      temporal:
         condition: service_healthy
     networks:
       - aurix-network
@@ -400,12 +466,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-aurix_dev_password}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_REDIS_HOST: redis
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: aurix
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      temporal:
         condition: service_healthy
     networks:
       - aurix-network
@@ -777,6 +847,7 @@ volumes:
   keycloak_data:
   clickhouse_data:
   timescaledb_data:
+  temporal_postgres_data:
 
 networks:
   aurix-network:

@@ -1,0 +1,59 @@
+temporal-server:
+  server:
+    enabled: true
+    replicas: 1
+    config:
+      persistence:
+        defaultStore: default
+        visibilityStore: visibility
+        advancedVisibilityStore: visibility
+        numHistoryShards: 4
+        sql:
+          default:
+            driver: postgres
+            postgres:
+              user: temporal
+              password: temporal_dev_password
+              host: temporal-postgres
+              port: 5432
+              database: temporal
+          visibility:
+            driver: postgres
+            postgres:
+              user: temporal
+              password: temporal_dev_password
+              host: temporal-postgres
+              port: 5432
+              database: temporal_visibility
+    service:
+      type: ClusterIP
+      port: 7233
+
+  web:
+    enabled: true
+    service:
+      type: ClusterIP
+      port: 8080
+
+  admintools:
+    enabled: false
+
+  worker:
+    enabled: false
+
+temporal-postgres:
+  enabled: true
+  auth:
+    username: temporal
+    password: temporal_dev_password
+    database: temporal
+  primary:
+    persistence:
+      size: 10Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi

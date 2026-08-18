@@ -1,0 +1,19 @@
+{{- if .Values.temporal-postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-postgres
+  labels:
+    app.kubernetes.io/name: temporal-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgresql
+  selector:
+    app.kubernetes.io/name: temporal-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
